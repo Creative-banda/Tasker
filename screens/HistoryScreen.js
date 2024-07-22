@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, S
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import Filter from '../assets/SVG/FilterIcon';
-import { ref, get, update, onValue } from 'firebase/database';
+import { ref, get, update } from 'firebase/database';
 import { database } from '../components/firebase';
 
 function HistoryScreen() {
@@ -77,20 +77,20 @@ function HistoryScreen() {
     };
 
 
-    const toggleTaskSelection = (assignedTo, assignedBy, title) => {
+    const toggleTaskSelection = (id, assignedTo, assignedBy, title) => {
         setSelectedTasks((prevSelectedTasks) => {
-            const taskIndex = prevSelectedTasks.findIndex(task => task.assignedTo === assignedTo && task.assignedBy === assignedBy && task.title === title);
+            const taskIndex = prevSelectedTasks.findIndex(task => task.id === id);
             if (taskIndex !== -1) {
-                return prevSelectedTasks.filter(task => !(task.assignedTo === assignedTo && task.assignedBy === assignedBy && task.title === title));
+                return prevSelectedTasks.filter(task => task.id !== id);
             } else {
-                return [...prevSelectedTasks, { assignedTo, assignedBy, title }];
+                return [...prevSelectedTasks, { id, assignedTo, assignedBy, title }];
             }
         });
     };
 
 
 
-    const handleDeleteSelectedTasks = () => {
+    const handleDeleteSelectedTasks = async () => {
         Alert.alert(
             'Delete Tasks',
             'Are you sure you want to delete selected tasks?',
@@ -98,13 +98,30 @@ function HistoryScreen() {
                 { text: 'Cancel', style: 'cancel' },
                 {
                     text: 'OK',
-                    onPress: () => {
-                        console.log("Deleted");
+                    onPress: async () => {
+                        try {
+                            const updates = {};
+                            selectedTasks.forEach(task => {
+                                updates[`/history/${task.id}`] = null;
+                            });
+
+                            await update(ref(database), updates);
+
+                            const remainingTasks = doneTasks.filter(task => !selectedTasks.some(selTask => selTask.id === task.id));
+                            setDoneTasks(remainingTasks);
+                            setFilteredTasks(remainingTasks);
+                            setSelectedTasks([]);
+                            Alert.alert('Success', 'Selected tasks have been deleted.');
+                        } catch (error) {
+                            console.error('Error deleting tasks from Firebase:', error);
+                            Alert.alert('Error', 'Failed to delete selected tasks.');
+                        }
                     },
                 },
             ]
         );
     };
+
 
     const handleCancelSelection = () => {
         setSelectedTasks([]);
@@ -113,12 +130,12 @@ function HistoryScreen() {
     const renderTask = ({ item }) => {
         const taskTime = new Date(item.time);
         const endTime = new Date(item.endTime);
-        const isSelected = selectedTasks.some(task => task.assignedTo === item.assignedTo && task.assignedBy === item.assignedBy && task.title === item.title);
+        const isSelected = selectedTasks.some(task => task.id === item.id);
 
         return (
             <TouchableOpacity
                 style={[styles.taskItem, isSelected && styles.selectedTaskItem]}
-                onPress={() => toggleTaskSelection(item.assignedTo, item.assignedBy, item.title)}
+                onPress={() => toggleTaskSelection(item.id, item.assignedTo, item.assignedBy, item.title)}
             >
                 <Text style={styles.taskText}>Assign By: {item.assignedBy}</Text>
                 <Text style={styles.taskText}>To: {item.assignedTo}</Text>
@@ -129,6 +146,7 @@ function HistoryScreen() {
             </TouchableOpacity>
         );
     };
+
 
 
 
@@ -207,6 +225,7 @@ function HistoryScreen() {
                     renderItem={renderTask}
                     contentContainerStyle={styles.list}
                 />
+
 
             )}
 
