@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert , ActivityIndicator} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ref, get } from 'firebase/database';
 import { database } from '../components/firebase';
@@ -26,6 +26,7 @@ const RoleSelection = ({ navigation }) => {
   const [NameWithEmail, setNameWithEmail] = useState([]);
   const [isAlertVisible, setAlertVisible] = useState(false);
   const [mail, setmail] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     fetchRoles();
@@ -190,6 +191,7 @@ const RoleSelection = ({ navigation }) => {
   };
 
   const sendEmail = async (mail, message) => {
+    setSending(true);
     const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
     try {
       const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Login OTP")}`);
@@ -209,6 +211,7 @@ const RoleSelection = ({ navigation }) => {
     } catch (error) {
       console.log("Error sending email: ", error);
     }
+    setSending(false);
   };
 
   const handleOtpSubmit = async () => {
@@ -226,7 +229,7 @@ const RoleSelection = ({ navigation }) => {
 
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#1E1E1E' }}>
       <StatusBar barStyle="light-content" />
       <View style={styles.container}>
         <Text style={styles.header}>Select Your Role</Text>
@@ -278,6 +281,10 @@ const RoleSelection = ({ navigation }) => {
           placeholder=""
           filterEnabled={false}
         />
+        {sending ?
+        <ActivityIndicator size="large" color="#FFFFFF" /> :
+        <Text></Text>
+      } 
 
         <CustomModal
           visible={isNameDropdownVisible}
@@ -330,10 +337,6 @@ const RoleSelection = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#1E1E1E',
-  },
   container: {
     flex: 1,
     padding: 20,

@@ -12,12 +12,11 @@ function HistoryScreen() {
     const [isDropdownVisible, setDropdownVisible] = useState(false);
     const [filterSearchQuery, setFilterSearchQuery] = useState('');
     const [filterPeople, setFilterPeople] = useState([]);
-    const [taskUpdateTrigger, setTaskUpdateTrigger] = useState(0);
+    const [selectedTasks, setSelectedTasks] = useState([]);
 
     useEffect(() => {
         initializeHistory();
-        listenForTaskUpdates();
-    }, [taskUpdateTrigger]);
+    }, []);
 
     useFocusEffect(
         useCallback(() => {
@@ -42,24 +41,23 @@ function HistoryScreen() {
             const username = await AsyncStorage.getItem('userName');
             const userrole = await AsyncStorage.getItem('userRole');
             const userTeam = await AsyncStorage.getItem('userTeam');
-            
+
             console.log('Retrieved username from AsyncStorage:', username, userTeam, userrole);
-    
+
             let historyRef = ref(database, 'history');
             let peopleDataRef = ref(database, 'Admin');
             const historySnapshot = await get(historyRef);
             const peopleSnapshot = await get(peopleDataRef);
-    
+
             if (historySnapshot.exists() && peopleSnapshot.exists()) {
                 const historyData = historySnapshot.val();
                 const peopleData = peopleSnapshot.val();
-    
+
                 const assignedToUser = Object.values(historyData).filter(item => item.assignedTo === username);
-                
                 const assignedByUser = Object.values(historyData).filter(item => item.assignedBy === username);
-    
+
                 const filteredByName = [...assignedToUser, ...assignedByUser];
-    
+
                 if (userrole === "Admin") {
                     setFilterPeople(Object.values(peopleData));
                 } else {
@@ -67,7 +65,6 @@ function HistoryScreen() {
                     setFilterPeople(filteredByTeam);
                 }
 
-    
                 setFilteredTasks(filteredByName);
                 setDoneTasks(filteredByName);
             } else {
@@ -78,33 +75,62 @@ function HistoryScreen() {
             Alert.alert('Error', 'Failed to fetch data. Please try again.');
         }
     };
-    
+
+
+    const toggleTaskSelection = (assignedTo, assignedBy, title) => {
+        setSelectedTasks((prevSelectedTasks) => {
+            const taskIndex = prevSelectedTasks.findIndex(task => task.assignedTo === assignedTo && task.assignedBy === assignedBy && task.title === title);
+            if (taskIndex !== -1) {
+                return prevSelectedTasks.filter(task => !(task.assignedTo === assignedTo && task.assignedBy === assignedBy && task.title === title));
+            } else {
+                return [...prevSelectedTasks, { assignedTo, assignedBy, title }];
+            }
+        });
+    };
+
+
+
+    const handleDeleteSelectedTasks = () => {
+        Alert.alert(
+            'Delete Tasks',
+            'Are you sure you want to delete selected tasks?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'OK',
+                    onPress: () => {
+                        console.log("Deleted");
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleCancelSelection = () => {
+        setSelectedTasks([]);
+    };
+
     const renderTask = ({ item }) => {
         const taskTime = new Date(item.time);
         const endTime = new Date(item.endTime);
+        const isSelected = selectedTasks.some(task => task.assignedTo === item.assignedTo && task.assignedBy === item.assignedBy && task.title === item.title);
 
         return (
-            <View style={styles.taskItem}>
+            <TouchableOpacity
+                style={[styles.taskItem, isSelected && styles.selectedTaskItem]}
+                onPress={() => toggleTaskSelection(item.assignedTo, item.assignedBy, item.title)}
+            >
                 <Text style={styles.taskText}>Assign By: {item.assignedBy}</Text>
                 <Text style={styles.taskText}>To: {item.assignedTo}</Text>
                 <Text style={styles.para}>Task: {item.title}</Text>
                 <Text style={styles.taskTime}>
                     From {taskTime.toLocaleTimeString()} to {endTime.toLocaleTimeString()}
                 </Text>
-            </View>
+            </TouchableOpacity>
         );
     };
 
-    const listenForTaskUpdates = () => {
-        const tasksRef = ref(database, 'history');
-        onValue(tasksRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const tasksData = snapshot.val();
-                console.log("Tasks updated: ", tasksData);
-                setTaskUpdateTrigger(prev => prev + 1);
-            }
-        });
-    };
+
 
     const handleFilterTasks = () => {
         setDropdownVisible(true);
@@ -131,24 +157,24 @@ function HistoryScreen() {
             const username = await AsyncStorage.getItem('userName');
             const historyRef = ref(database, 'history');
             const historySnapshot = await get(historyRef);
-    
+
             if (historySnapshot.exists()) {
                 const historyData = historySnapshot.val();
-                const tasksToDelete = Object.keys(historyData).filter(taskId =>historyData[taskId].assignedBy === username
+                const tasksToDelete = Object.keys(historyData).filter(taskId => historyData[taskId].assignedBy === username
                 );
-    
+
                 const updates = {};
                 tasksToDelete.forEach(taskId => {
                     updates[`/history/${taskId}`] = null;
                 });
-    
+
                 await update(ref(database), updates);
-    
-                // Update local state after deletion
+
                 const remainingTasks = doneTasks.filter(task => !tasksToDelete.includes(task.id));
                 setDoneTasks(remainingTasks);
                 setFilteredTasks(remainingTasks);
                 setDropdownVisible(false);
+                initializeHistory();
                 Alert.alert('Success', 'Tasks assigned by you have been deleted.');
             } else {
                 console.log('No history data available');
@@ -158,7 +184,6 @@ function HistoryScreen() {
             Alert.alert('Error', 'Failed to delete history data.');
         }
     };
-        
 
     return (
         <View style={styles.container}>
@@ -178,10 +203,22 @@ function HistoryScreen() {
             ) : (
                 <FlatList
                     data={filteredTasks}
-                    keyExtractor={(item) => item.id ? item.id.toString() : Math.random().toString()}
+                    keyExtractor={(item) => `${item.assignedBy}-${item.assignedTo}-${item.title}`}
                     renderItem={renderTask}
                     contentContainerStyle={styles.list}
                 />
+
+            )}
+
+            {selectedTasks.length > 0 && (
+                <View style={styles.selectionActions}>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleDeleteSelectedTasks}>
+                        <Text style={styles.actionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleCancelSelection}>
+                        <Text style={styles.actionButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                </View>
             )}
 
             <Modal
@@ -259,6 +296,9 @@ const styles = StyleSheet.create({
         marginVertical: 10,
         borderRadius: 10,
     },
+    selectedTaskItem: {
+        backgroundColor: '#666',
+    },
     taskText: {
         color: 'white',
         fontSize: 18,
@@ -321,6 +361,23 @@ const styles = StyleSheet.create({
     },
     scrollview: {
         backgroundColor: '#333',
+    },
+    selectionActions: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    actionButton: {
+        padding: 10,
+        backgroundColor: '#FF3B30',
+        borderRadius: 5,
+        marginHorizontal: 10,
+    },
+    actionButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        paddingHorizontal: 20,
     },
 });
 

@@ -90,7 +90,7 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
             handleSearch('');
             toggleModal();
             loaddata();
-            sendEmail(selectedPerson.email, `Task assigned by ${userName} and reminder set for ${days} day(s), ${hours} hour(s), and ${minutes} minute(s) from now.`);
+            // sendEmail(selectedPerson.email, `Task assigned by ${userName} and reminder set for ${days} day(s), ${hours} hour(s), and ${minutes} minute(s) from now.`);
         } catch (error) {
             console.error('Error assigning task:', error.message);
             Alert.alert('Error', 'Failed to assign task. Please try again.');

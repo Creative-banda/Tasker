@@ -44,7 +44,6 @@ const HomeScreen = ({ navigation }) => {
     }, []);
 
     useEffect(() => {
-        console.log("Tasks have been updated, running useEffect");
         loadTasks();
     }, [taskUpdateTrigger]);
 
@@ -53,7 +52,6 @@ const HomeScreen = ({ navigation }) => {
         onValue(tasksRef, (snapshot) => {
             if (snapshot.exists()) {
                 const tasksData = snapshot.val();
-                console.log("Tasks updated: ", tasksData);
                 setTaskUpdateTrigger(prev => prev + 1);
             }
         });
@@ -98,7 +96,6 @@ const HomeScreen = ({ navigation }) => {
         try {
             const userTeam = await AsyncStorage.getItem('userTeam');
             username = await AsyncStorage.getItem('userRole')
-            console.log(username);
             const rolesRef = ref(database, 'Admin');
             const snapshot = await get(rolesRef);
 
@@ -217,7 +214,7 @@ const HomeScreen = ({ navigation }) => {
             <View style={[styles.taskItem, isUrgent && styles.urgentTaskItem]}>
                 <Text style={styles.taskText}>Assigned By: {item.assignedBy}</Text>
                 <Text style={styles.taskText}>Assigned To: {item.assignedTo}</Text>
-                <Text style={styles.taskText}>Description: {item.title}</Text>
+                <Text style={styles.taskText}>Task: {item.title}</Text>
                 <Text style={styles.minutesLeftstyle}>({timeLeftString} left)</Text>
                 <TouchableOpacity
                     onPress={() => {
