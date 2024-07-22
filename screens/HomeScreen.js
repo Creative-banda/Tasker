@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, TouchableWithoutFeedback, TextInput, ScrollView, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, TouchableWithoutFeedback, TextInput, ScrollView, StatusBar, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import PeopleModal from '../components/PeopleModal';
@@ -10,7 +10,7 @@ import History from '../assets/SVG/HistoryIcon';
 import Filter from "../assets/SVG/FilterIcon";
 import EditIcon from "../assets/SVG/Edit";
 import AddIcon from "../assets/SVG/AddIcon";
-import { ref, get, remove, set } from 'firebase/database';
+import { ref, get, remove, set, onValue } from 'firebase/database';
 import { database } from '../components/firebase';
 import Alert from '../components/Alert';
 
@@ -29,21 +29,35 @@ const HomeScreen = ({ navigation }) => {
     const [filtercheck, setfiltercheck] = useState(false);
     const [filterperson, setfilterperson] = useState("");
     const [timeLeft, setTimeLeft] = useState({});
-    const [userData, setUserData] = useState({ name: '', role: '', team: '' });
     const [alertMessage, setAlertMessage] = useState('');
     const [CustomalertVisible, setCustomAlertVisible] = useState(false);
-
-
+    const [taskUpdateTrigger, setTaskUpdateTrigger] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
             await initializeData();
             await loadTasks();
         };
-    
+
         fetchData();
+        listenForTaskUpdates();
     }, []);
-    
+
+    useEffect(() => {
+        console.log("Tasks have been updated, running useEffect");
+        loadTasks();
+    }, [taskUpdateTrigger]);
+
+    const listenForTaskUpdates = () => {
+        const tasksRef = ref(database, 'tasks');
+        onValue(tasksRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const tasksData = snapshot.val();
+                console.log("Tasks updated: ", tasksData);
+                setTaskUpdateTrigger(prev => prev + 1);
+            }
+        });
+    };
 
     useFocusEffect(
         useCallback(() => {
@@ -83,15 +97,17 @@ const HomeScreen = ({ navigation }) => {
     const initializeData = async () => {
         try {
             const userTeam = await AsyncStorage.getItem('userTeam');
+            username = await AsyncStorage.getItem('userRole')
+            console.log(username);
             const rolesRef = ref(database, 'Admin');
             const snapshot = await get(rolesRef);
-    
+
             if (snapshot.exists()) {
                 const rolesData = snapshot.val();
                 const rolesArray = Object.keys(rolesData).map(key => ({ ...rolesData[key], id: key }));
                 const filteredRolesData = rolesArray.filter(item => item !== undefined);
-    
-                if (userData.role === "Admin") {
+
+                if (username === "Admin") {
                     setFilteredData(filteredRolesData);
                     setFilterData(filteredRolesData);
                 } else {
@@ -109,11 +125,11 @@ const HomeScreen = ({ navigation }) => {
             setFilterData([]);
         }
     };
-    
+
     const loadTasks = async () => {
         try {
             const name = await AsyncStorage.getItem('userName');
-    
+
             const tasksRef = ref(database, `tasks`);
             const snapshot = await get(tasksRef);
             if (snapshot.exists()) {
@@ -135,7 +151,6 @@ const HomeScreen = ({ navigation }) => {
             console.error('Error reading tasks from Firebase:', error);
         }
     };
-    
 
     const toggleModal = async () => {
         const userRole = await AsyncStorage.getItem('userRole');
@@ -251,101 +266,104 @@ const HomeScreen = ({ navigation }) => {
     };
 
     return (
-        <LinearGradient colors={['#1a1a1a', '#333333']} style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-            <Alert
-                visible={CustomalertVisible}
-                message={alertMessage}
-                onOkay={() => setCustomAlertVisible(false)}
-            />
-            <TouchableOpacity onPress={dltstorage}>
-                <Text style={styles.header}>Tasker</Text>
-            </TouchableOpacity>
-            {filtercheck && <Text style={styles.FilterPerson}> Selected Filter : {filterperson}</Text>}
-            <View style={styles.content}>
-                {tasks.length === 0 ? (
-                    <Text style={styles.noTasksText}>No tasks</Text>
-                ) : (
-                    <FlatList
-                        data={tasks.filter(item => item && Object.keys(item).length > 0)}
-                        keyExtractor={(item) => item.id.toString()}
-                        renderItem={renderTask}
-                        style={styles.taskList}
-                    />
-                )}
-            </View>
-            <View style={styles.ButtonContainer}>
-                <TouchableOpacity style={styles.iconButton} onPress={Addremove}>
-                    <View style={styles.iconWrapper}>
-                        <EditIcon width={27} height={27} color="#FFFFFF" strokeWidth={1} />
-                        <Text style={styles.editiconText}>Edit</Text>
-                    </View>
+        <SafeAreaView style={{ flex: 1 }}>
+
+            <LinearGradient colors={['#1a1a1a', '#333333']} style={styles.container}>
+                <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+                <Alert
+                    visible={CustomalertVisible}
+                    message={alertMessage}
+                    onOkay={() => setCustomAlertVisible(false)}
+                />
+                <TouchableOpacity onPress={dltstorage}>
+                    <Text style={styles.header}>Tasker</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton} onPress={handleViewHistory}>
-                    <View style={styles.iconWrapper}>
-                        <History width={30} height={30} color="#FFFFFF" strokeWidth={0.1} />
-                        <Text style={styles.iconText}>History</Text>
-                    </View>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.plusIcon} onPress={toggleModal}>
-                    <View style={styles.iconWrapper}>
-                        <AddIcon name="plus" size={30} color="#FFFFFF" />
-                        <Text style={styles.iconText}>Add</Text>
-                    </View>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton} onPress={() => setDropdownVisible(true)}>
-                    <View style={styles.iconWrapper}>
-                        <Filter width={30} height={30} color="#FFFFFF" strokeWidth={1} />
-                        <Text style={styles.iconText}>Filter</Text>
-                    </View>
-                </TouchableOpacity>
-            </View>
-            <PeopleModal
-                isVisible={isModalVisible}
-                toggleModal={toggleModal}
-                searchQuery={searchQuery}
-                handleSearch={handleSearch}
-                filteredData={filteredData}
-                loaddata={loadTasks}
-            />
-            <CustomAlert
-                visible={isAlertVisible}
-                message="Are you sure you want to mark this task as done?"
-                onConfirm={handleMarkTaskDone}
-                onCancel={() => setAlertVisible(false)}
-            />
-            <Modal
-                visible={isDropdownVisible}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={toggleModalDropDown}
-            >
-                <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
-                    <View style={styles.dropdownOverlay}>
-                        <View style={styles.dropdownContainer}>
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search"
-                                placeholderTextColor="#888"
-                                value={filterSearchQuery}
-                                onChangeText={handleFilterSearch}
-                            />
-                            <ScrollView>
-                                {[{ id: 'all', name: 'All' }, ...filterData].filter(item => item.name && item.name.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(person => (
-                                    <TouchableOpacity
-                                        key={person.id.toString()}
-                                        onPress={() => handlePersonSelect(person)}
-                                        style={styles.dropdownItem}
-                                    >
-                                        <Text style={styles.dropdownItemText}>{person.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
+                {filtercheck && <Text style={styles.FilterPerson}> Selected Filter : {filterperson}</Text>}
+                <View style={styles.content}>
+                    {tasks.length === 0 ? (
+                        <Text style={styles.noTasksText}>No tasks</Text>
+                    ) : (
+                        <FlatList
+                            data={tasks.filter(item => item && Object.keys(item).length > 0)}
+                            keyExtractor={(item) => item.id.toString()}
+                            renderItem={renderTask}
+                            style={styles.taskList}
+                        />
+                    )}
+                </View>
+                <View style={styles.ButtonContainer}>
+                    <TouchableOpacity style={styles.iconButton} onPress={Addremove}>
+                        <View style={styles.iconWrapper}>
+                            <EditIcon width={27} height={27} color="#FFFFFF" strokeWidth={1} />
+                            <Text style={styles.editiconText}>Edit</Text>
                         </View>
-                    </View>
-                </TouchableWithoutFeedback>
-            </Modal>
-        </LinearGradient>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconButton} onPress={handleViewHistory}>
+                        <View style={styles.iconWrapper}>
+                            <History width={30} height={30} color="#FFFFFF" strokeWidth={0.1} />
+                            <Text style={styles.iconText}>History</Text>
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.plusIcon} onPress={toggleModal}>
+                        <View style={styles.iconWrapper}>
+                            <AddIcon name="plus" size={30} color="#FFFFFF" />
+                            <Text style={styles.iconText}>Add</Text>
+                        </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconButton} onPress={() => setDropdownVisible(true)}>
+                        <View style={styles.iconWrapper}>
+                            <Filter width={30} height={30} color="#FFFFFF" strokeWidth={1} />
+                            <Text style={styles.iconText}>Filter</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                <PeopleModal
+                    isVisible={isModalVisible}
+                    toggleModal={toggleModal}
+                    searchQuery={searchQuery}
+                    handleSearch={handleSearch}
+                    filteredData={filteredData}
+                    loaddata={loadTasks}
+                />
+                <CustomAlert
+                    visible={isAlertVisible}
+                    message="Are you sure you want to mark this task as done?"
+                    onConfirm={handleMarkTaskDone}
+                    onCancel={() => setAlertVisible(false)}
+                />
+                <Modal
+                    visible={isDropdownVisible}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={toggleModalDropDown}
+                >
+                    <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
+                        <View style={styles.dropdownOverlay}>
+                            <View style={styles.dropdownContainer}>
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder="Search"
+                                    placeholderTextColor="#888"
+                                    value={filterSearchQuery}
+                                    onChangeText={handleFilterSearch}
+                                />
+                                <ScrollView>
+                                    {[{ id: 'all', name: 'All' }, ...filterData].filter(item => item.name && item.name.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(person => (
+                                        <TouchableOpacity
+                                            key={person.id.toString()}
+                                            onPress={() => handlePersonSelect(person)}
+                                            style={styles.dropdownItem}
+                                        >
+                                            <Text style={styles.dropdownItemText}>{person.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </Modal>
+            </LinearGradient>
+        </SafeAreaView>
     );
 }
 

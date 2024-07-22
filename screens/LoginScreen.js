@@ -190,9 +190,9 @@ const RoleSelection = ({ navigation }) => {
   };
 
   const sendEmail = async (mail, message) => {
-    const apiUrl = 'https://script.google.com/macros/s/AKfycbyMZN7qM6LnIgCyKBKGShsiYiJ3198M3I_aHj7w0Dw24IRYkpENjUM6-oL9GKwBQ494Rg/exec';
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
     try {
-      const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}`);
+      const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Login OTP")}`);
       const text = await res.text();
       console.log(text);
 
@@ -214,7 +214,7 @@ const RoleSelection = ({ navigation }) => {
   const handleOtpSubmit = async () => {
     if (otp === Confirm_otp) {
       try {
-        await handleSaveSelection(); 
+        await handleSaveSelection();
       } catch (error) {
         console.error('Error during OTP submission:', error);
       }
@@ -223,7 +223,7 @@ const RoleSelection = ({ navigation }) => {
       Alert.alert('Invalid OTP', 'The OTP you entered is incorrect.');
     }
   };
-  
+
 
   return (
     <SafeAreaView style={styles.safeArea}>

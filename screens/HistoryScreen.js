@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, S
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import Filter from '../assets/SVG/FilterIcon';
-import { ref, get, update } from 'firebase/database';
+import { ref, get, update, onValue } from 'firebase/database';
 import { database } from '../components/firebase';
 
 function HistoryScreen() {
@@ -12,10 +12,12 @@ function HistoryScreen() {
     const [isDropdownVisible, setDropdownVisible] = useState(false);
     const [filterSearchQuery, setFilterSearchQuery] = useState('');
     const [filterPeople, setFilterPeople] = useState([]);
+    const [taskUpdateTrigger, setTaskUpdateTrigger] = useState(0);
 
     useEffect(() => {
         initializeHistory();
-    }, []);
+        listenForTaskUpdates();
+    }, [taskUpdateTrigger]);
 
     useFocusEffect(
         useCallback(() => {
@@ -93,6 +95,17 @@ function HistoryScreen() {
         );
     };
 
+    const listenForTaskUpdates = () => {
+        const tasksRef = ref(database, 'history');
+        onValue(tasksRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const tasksData = snapshot.val();
+                console.log("Tasks updated: ", tasksData);
+                setTaskUpdateTrigger(prev => prev + 1);
+            }
+        });
+    };
+
     const handleFilterTasks = () => {
         setDropdownVisible(true);
     };
@@ -121,8 +134,7 @@ function HistoryScreen() {
     
             if (historySnapshot.exists()) {
                 const historyData = historySnapshot.val();
-                const tasksToDelete = Object.keys(historyData).filter(taskId =>
-                    historyData[taskId].assignedBy === username
+                const tasksToDelete = Object.keys(historyData).filter(taskId =>historyData[taskId].assignedBy === username
                 );
     
                 const updates = {};
@@ -135,7 +147,7 @@ function HistoryScreen() {
                 // Update local state after deletion
                 const remainingTasks = doneTasks.filter(task => !tasksToDelete.includes(task.id));
                 setDoneTasks(remainingTasks);
-                setFilteredTasks(remainingTasks); // Update filteredTasks to match doneTasks
+                setFilteredTasks(remainingTasks);
                 setDropdownVisible(false);
                 Alert.alert('Success', 'Tasks assigned by you have been deleted.');
             } else {
