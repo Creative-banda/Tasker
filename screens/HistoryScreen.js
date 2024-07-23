@@ -44,8 +44,8 @@ function HistoryScreen() {
 
             console.log('Retrieved username from AsyncStorage:', username, userTeam, userrole);
 
-            let historyRef = ref(database, 'history');
-            let peopleDataRef = ref(database, 'Admin');
+            const historyRef = ref(database, 'history');
+            const peopleDataRef = ref(database, 'Admin');
             const historySnapshot = await get(historyRef);
             const peopleSnapshot = await get(peopleDataRef);
 
@@ -56,7 +56,10 @@ function HistoryScreen() {
                 const assignedToUser = Object.values(historyData).filter(item => item.assignedTo === username);
                 const assignedByUser = Object.values(historyData).filter(item => item.assignedBy === username);
 
-                const filteredByName = [...assignedToUser, ...assignedByUser];
+                const filteredByName = [...assignedToUser, ...assignedByUser].map((item, index) => ({
+                    ...item,
+                    id: `${item.assignedBy}-${item.title}-${index}`
+                }));
 
                 if (userrole === "Admin") {
                     setFilterPeople(Object.values(peopleData));
@@ -77,6 +80,7 @@ function HistoryScreen() {
     };
 
 
+
     const toggleTaskSelection = (id, assignedTo, assignedBy, title) => {
         setSelectedTasks((prevSelectedTasks) => {
             const taskIndex = prevSelectedTasks.findIndex(task => task.id === id);
@@ -88,8 +92,6 @@ function HistoryScreen() {
         });
     };
 
-
-
     const handleDeleteSelectedTasks = async () => {
         Alert.alert(
             'Delete Tasks',
@@ -100,18 +102,44 @@ function HistoryScreen() {
                     text: 'OK',
                     onPress: async () => {
                         try {
-                            const updates = {};
-                            selectedTasks.forEach(task => {
-                                updates[`/history/${task.id}`] = null;
-                            });
-
-                            await update(ref(database), updates);
-
-                            const remainingTasks = doneTasks.filter(task => !selectedTasks.some(selTask => selTask.id === task.id));
-                            setDoneTasks(remainingTasks);
-                            setFilteredTasks(remainingTasks);
-                            setSelectedTasks([]);
-                            Alert.alert('Success', 'Selected tasks have been deleted.');
+                            const historyRef = ref(database, 'history');
+                            const historySnapshot = await get(historyRef);
+    
+                            if (historySnapshot.exists()) {
+                                const historyData = historySnapshot.val();
+                                console.log('Fetched history data:', historyData);
+    
+                                // Prepare updates object
+                                let updates = {};
+                                selectedTasks.forEach(task => {
+                                    // Find the key corresponding to the task
+                                    const keyToRemove = Object.keys(historyData).find(key => {
+                                        const historyTask = historyData[key];
+                                        return historyTask.assignedBy === task.assignedBy && historyTask.title === task.title;
+                                    });
+    
+                                    if (keyToRemove) {
+                                        updates[`/history/${keyToRemove}`] = null;
+                                        console.log('Task to delete:', historyData[keyToRemove], 'with key:', keyToRemove);
+                                    }
+                                });
+    
+                                console.log('Updates to apply:', updates);
+    
+                                // Apply updates
+                                await update(ref(database), updates);
+                                console.log('Firebase updated successfully');
+    
+                                // Update local state
+                                const remainingTasks = doneTasks.filter(task => !selectedTasks.some(selTask => selTask.assignedBy === task.assignedBy && selTask.title === task.title));
+                                setDoneTasks(remainingTasks);
+                                setFilteredTasks(remainingTasks);
+                                setSelectedTasks([]);
+                                Alert.alert('Success', 'Selected tasks have been deleted.');
+                            } else {
+                                Alert.alert('Error', 'No tasks found to delete.');
+                                console.log('No history data available');
+                            }
                         } catch (error) {
                             console.error('Error deleting tasks from Firebase:', error);
                             Alert.alert('Error', 'Failed to delete selected tasks.');
@@ -121,6 +149,7 @@ function HistoryScreen() {
             ]
         );
     };
+            
 
 
     const handleCancelSelection = () => {
@@ -221,7 +250,7 @@ function HistoryScreen() {
             ) : (
                 <FlatList
                     data={filteredTasks}
-                    keyExtractor={(item) => `${item.assignedBy}-${item.assignedTo}-${item.title}`}
+                    keyExtractor={(item) => `${item.assignedBy}-${item.assignedTo}-${item.title}-${item.id}`}
                     renderItem={renderTask}
                     contentContainerStyle={styles.list}
                 />

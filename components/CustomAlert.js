@@ -1,21 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const CustomAlert = ({ visible, message, onConfirm, onCancel }) => {
   const scaleValue = new Animated.Value(0);
 
-  const animateScale = () => {
-    Animated.spring(scaleValue, {
-      toValue: 1,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  if (visible) {
-    animateScale();
-  }
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(scaleValue, {
+        toValue: 1,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
 
   return (
     <Modal
@@ -41,7 +39,6 @@ const CustomAlert = ({ visible, message, onConfirm, onCancel }) => {
     </Modal>
   );
 };
-
 
 const styles = StyleSheet.create({
   alertContainer: {
