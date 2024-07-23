@@ -35,9 +35,7 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
     const sendEmail = async (mail, message) => {
         const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
         try {
-            const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Reminder")}`);
-            const text = await res.text();
-            console.log(text);
+            await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Reminder")}`);
         } catch (error) {
             console.log("Error sending email: ", error);
         }
@@ -90,7 +88,7 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
             handleSearch('');
             toggleModal();
             loaddata();
-            // sendEmail(selectedPerson.email, `Task assigned by ${userName} and reminder set for ${days} day(s), ${hours} hour(s), and ${minutes} minute(s) from now.`);
+            sendEmail(selectedPerson.email, `Task assigned by ${userName} Task: ${task}`);
         } catch (error) {
             console.error('Error assigning task:', error.message);
             Alert.alert('Error', 'Failed to assign task. Please try again.');

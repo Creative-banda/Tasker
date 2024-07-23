@@ -207,7 +207,7 @@ function HistoryScreen() {
 
             if (historySnapshot.exists()) {
                 const historyData = historySnapshot.val();
-                const tasksToDelete = Object.keys(historyData).filter(taskId => historyData[taskId].assignedBy === username
+                const tasksToDelete = Object.keys(historyData).filter(taskId => historyData[taskId].assignedBy === username || historyData[taskId].assignedTo === username
                 );
 
                 const updates = {};
