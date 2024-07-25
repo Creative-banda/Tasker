@@ -218,6 +218,27 @@ const RoleSelection = ({ navigation }) => {
     if (otp === Confirm_otp) {
       try {
         await handleSaveSelection();
+        const token = await AsyncStorage.getItem('token');
+        console.log("Token : ", token);
+
+        // Fetch Admin data
+        const adminRef = ref(database, 'roles/Admin');
+        const snapshot = await get(adminRef);
+        if (snapshot.exists()) {
+          const adminData = snapshot.val();
+          const userKey = Object.keys(adminData).find(key => adminData[key].email === mail);
+
+          if (userKey) {
+            // Update the token field
+            const userRef = ref(database, `roles/Admin/${userKey}`);
+            await userRef.update({ token });
+            console.log("Token updated for user:", userKey);
+          } else {
+            console.log("No matching email found in Admin node.");
+          }
+        } else {
+          console.log("No Admin data found.");
+        }
       } catch (error) {
         console.error('Error during OTP submission:', error);
       }

@@ -176,9 +176,6 @@ function HistoryScreen() {
         );
     };
 
-
-
-
     const handleFilterTasks = () => {
         setDropdownVisible(true);
     };

@@ -9,6 +9,7 @@ import HistoryScreen from './screens/HistoryScreen';
 import AddRemoveScreen from './screens/AddRemoveScreen';
 import RoleSelection from './screens/LoginScreen';
 import { useFonts } from 'expo-font';
+import NotificationPermission from './components/NotificationPermission';
 
 enableScreens();
 
@@ -23,7 +24,6 @@ const App = () => {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-
         const userRole = await AsyncStorage.getItem('userRole');
         const userName = await AsyncStorage.getItem('userName');
 
@@ -47,6 +47,7 @@ const App = () => {
 
   return (
     <SafeAreaProvider>
+      <NotificationPermission />
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName={initialRoute}
