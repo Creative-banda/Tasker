@@ -6,24 +6,22 @@ const NotificationPermission = () => {
   useEffect(() => {
     const checkNotificationPermission = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem('expoPushToken');
-
+        let storedToken = await AsyncStorage.getItem('expoPushToken');
         if (storedToken) {
           console.log('Expo Push Token already stored:', storedToken);
           return;
         }
-        const { status } = await Notifications.getPermissionsAsync();
-
+        let { status } = await Notifications.getPermissionsAsync();
         if (status !== 'granted') {
-          const { status: newStatus } = await Notifications.requestPermissionsAsync();
-          if (newStatus !== 'granted') {
-            console.log('Notification permissions denied');
-            return;
-          }
+          const permissionResponse = await Notifications.requestPermissionsAsync();
+          status = permissionResponse.status;
+        }
+        if (status !== 'granted') {
+          console.log('Notification permissions denied');
+          return;
         }
         const { data: token } = await Notifications.getExpoPushTokenAsync();
         console.log('Expo Push Token:', token);
-
         await AsyncStorage.setItem('expoPushToken', token);
 
       } catch (error) {

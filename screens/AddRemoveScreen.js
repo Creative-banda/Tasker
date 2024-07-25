@@ -41,9 +41,8 @@ const AddRemoveScreen = () => {
         }
     };
 
-    // Function to generate a random ID
     const generateRandomId = () => {
-        return Math.random().toString(36).substring(7); // Adjust length as needed
+        return Math.random().toString(36).substring(7);
     };
 
     const handleAddPerson = () => {

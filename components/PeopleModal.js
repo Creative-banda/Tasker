@@ -6,6 +6,7 @@ import CustomDropdown from './CustomDropdown';
 import { ref, set, push } from 'firebase/database';
 import { database } from './firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, filteredData, loaddata }) => {
     const [selectedPerson, setSelectedPerson] = useState(null);
@@ -32,14 +33,23 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
         handleNewSearch(item.name);
     };
 
-    const sendEmail = async (mail, message) => {
-        const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
+    
+    const sendNotification = async (token, message) => {
         try {
-            await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Reminder")}`);
+          const response = await axios.post('https://taskerserver.onrender.com/send-notification', {
+            token,
+            message,
+          });
+      
+          if (response.data.success) {
+            console.log('Notification sent successfully:', response.data.ticketChunk);
+          } else {
+            console.error('Failed to send notification:', response.data.error);
+          }
         } catch (error) {
-            console.log("Error sending email: ", error);
+          console.error('Error sending notification:', error);
         }
-    };
+      };
 
 
     const handleAssignTask = async () => {
@@ -74,6 +84,7 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
                 assignedBy: userName,
                 assignedTo: selectedPerson.name,
             };
+            console.log(selectedPerson.token)
 
             const tasksRef = ref(database, `tasks`);
             const newTaskRef = push(tasksRef);
@@ -81,6 +92,7 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
 
             Alert.alert('Success', `Task assigned to ${selectedPerson.name} and reminder set for ${days} day(s), ${hours} hour(s), and ${minutes} minute(s) from now.`);
             setTask('');
+            sendNotification(selectedPerson.token, `Task assigned by ${userName} Task: ${task}`);
             setSelectedPerson(null);
             setDays(0);
             setHours(0);
@@ -88,7 +100,6 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
             handleSearch('');
             toggleModal();
             loaddata();
-            sendEmail(selectedPerson.email, `Task assigned by ${userName} Task: ${task}`);
         } catch (error) {
             console.error('Error assigning task:', error.message);
             Alert.alert('Error', 'Failed to assign task. Please try again.');

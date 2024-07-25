@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert , ActivityIndicator} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ref, get } from 'firebase/database';
+import { ref, get, set } from 'firebase/database';
 import { database } from '../components/firebase';
 import CustomModal from '../components/CustomModal';
 import CrossIcon from '../assets/SVG/cross';
@@ -25,7 +25,7 @@ const RoleSelection = ({ navigation }) => {
   const [filterSearchQuery, setFilterSearchQuery] = useState('');
   const [NameWithEmail, setNameWithEmail] = useState([]);
   const [isAlertVisible, setAlertVisible] = useState(false);
-  const [mail, setmail] = useState("");
+  const [SelectedUser, SetSelectedUser] = useState("");
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -156,8 +156,8 @@ const RoleSelection = ({ navigation }) => {
     setNameDropdownVisible(false);
     const selectedPerson = NameWithEmail.find(n => n.name === selectedName);
     if (selectedPerson) {
-      setmail(selectedPerson.email);
-      console.log("Select Person : ", mail);
+      SetSelectedUser(selectedPerson);
+      console.log("Select Person : ", selectedPerson);
       setAlertVisible(true);
     }
   };
@@ -167,7 +167,8 @@ const RoleSelection = ({ navigation }) => {
 
     console.log(confirm_OTP)
     SetConfirmOtp(confirm_OTP)
-    sendEmail(mail, confirm_OTP)
+    setOTPModalVisible(true)
+    // sendEmail(SelectedUser.email, confirm_OTP)
     setAlertVisible(false)
   }
 
@@ -217,31 +218,43 @@ const RoleSelection = ({ navigation }) => {
   const handleOtpSubmit = async () => {
     if (otp === Confirm_otp) {
       try {
-        await handleSaveSelection();
-        const token = await AsyncStorage.getItem('token');
+        const token = await AsyncStorage.getItem('expoPushToken');
         console.log("Token : ", token);
-
-        // Fetch Admin data
-        const adminRef = ref(database, 'roles/Admin');
-        const snapshot = await get(adminRef);
-        if (snapshot.exists()) {
-          const adminData = snapshot.val();
-          const userKey = Object.keys(adminData).find(key => adminData[key].email === mail);
-
-          if (userKey) {
-            // Update the token field
-            const userRef = ref(database, `roles/Admin/${userKey}`);
-            await userRef.update({ token });
-            console.log("Token updated for user:", userKey);
+  
+        if (SelectedUser.email) {
+          const adminRef = ref(database, 'Admin');
+          const snapshot = await get(adminRef);
+          
+          if (snapshot.exists()) {
+            const adminData = snapshot.val();
+            let userKey = null;
+            
+            for (const key in adminData) {
+              if (adminData[key].email === SelectedUser.email) {
+                userKey = key;
+                break;
+              }
+            }
+            
+            if (userKey !== null) {
+              const userRef = ref(database, `Admin/${userKey}`);
+              await set(userRef, { ...adminData[userKey], token });
+              console.log("Token updated for user:", SelectedUser.email);
+              
+            } else {
+              console.log("No matching email found in Admin node.");
+            }
           } else {
-            console.log("No matching email found in Admin node.");
+            console.log("Admin node does not exist in the database.");
           }
         } else {
-          console.log("No Admin data found.");
+          console.log("No email selected for the user.");
         }
       } catch (error) {
         console.error('Error during OTP submission:', error);
       }
+      handleSaveSelection()
+      navigation.navigate('Home')
       setOTPModalVisible(false);
     } else {
       Alert.alert('Invalid OTP', 'The OTP you entered is incorrect.');
@@ -320,7 +333,7 @@ const RoleSelection = ({ navigation }) => {
 
         <CustomAlert
           visible={isAlertVisible}
-          message={`${"Are you sure you want to send OTP at"} ${mail}`}
+          message={`${"Are you sure you want to send OTP at"} ${SelectedUser.email}`}
           onConfirm={ConfirmSend}
           onCancel={() => setAlertVisible(false)}
         />

@@ -95,7 +95,7 @@ const HomeScreen = ({ navigation }) => {
     const initializeData = async () => {
         try {
             const userTeam = await AsyncStorage.getItem('userTeam');
-            username = await AsyncStorage.getItem('userRole')
+            const username = await AsyncStorage.getItem('userRole')
             const rolesRef = ref(database, 'Admin');
             const snapshot = await get(rolesRef);
 
