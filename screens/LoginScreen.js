@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert , ActivityIndicator} from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ref, get, set } from 'firebase/database';
 import { database } from '../components/firebase';
@@ -89,7 +89,6 @@ const RoleSelection = ({ navigation }) => {
         const snapshot = await get(namesRef);
         if (snapshot.exists()) {
           fetchedData = snapshot.val();
-          datawithmail = fetchNames
           namesData = Object.keys(fetchedData).map(key => fetchedData[key].name);
           console.log("Admin Data Fetched :", namesData);
         } else {
@@ -119,13 +118,12 @@ const RoleSelection = ({ navigation }) => {
 
       setNames(namesData);
       setFilteredNames(namesData);
-      setNameWithEmail(fetchedData)
+      setNameWithEmail(fetchedData);
 
     } catch (error) {
       console.error('Error fetching names from Firebase:', error);
     }
   };
-
 
   const handleRoleSelect = (selectedRole) => {
     setRole(selectedRole);
@@ -157,20 +155,20 @@ const RoleSelection = ({ navigation }) => {
     const selectedPerson = NameWithEmail.find(n => n.name === selectedName);
     if (selectedPerson) {
       SetSelectedUser(selectedPerson);
-      console.log("Select Person : ", selectedPerson);
+      console.log("Selected Person : ", selectedPerson);
       setAlertVisible(true);
+      console.log("Alert Visible:", isAlertVisible);
     }
   };
 
   const ConfirmSend = () => {
     const confirm_OTP = Math.floor(1000 + Math.random() * 9000).toString();
-
-    console.log(confirm_OTP)
-    SetConfirmOtp(confirm_OTP)
+    console.log("Generated OTP:", confirm_OTP);
+    SetConfirmOtp(confirm_OTP);
+    setAlertVisible(false);
+    // sendEmail(SelectedUser.email, confirm_OTP);
     setOTPModalVisible(true)
-    // sendEmail(SelectedUser.email, confirm_OTP)
-    setAlertVisible(false)
-  }
+  };
 
   const handleFilterSearch = (query) => {
     setFilterSearchQuery(query);
@@ -220,27 +218,26 @@ const RoleSelection = ({ navigation }) => {
       try {
         const token = await AsyncStorage.getItem('expoPushToken');
         console.log("Token : ", token);
-  
+
         if (SelectedUser.email) {
           const adminRef = ref(database, 'Admin');
           const snapshot = await get(adminRef);
-          
+
           if (snapshot.exists()) {
             const adminData = snapshot.val();
             let userKey = null;
-            
+
             for (const key in adminData) {
               if (adminData[key].email === SelectedUser.email) {
                 userKey = key;
                 break;
               }
             }
-            
+
             if (userKey !== null) {
               const userRef = ref(database, `Admin/${userKey}`);
               await set(userRef, { ...adminData[userKey], token });
               console.log("Token updated for user:", SelectedUser.email);
-              
             } else {
               console.log("No matching email found in Admin node.");
             }
@@ -253,14 +250,13 @@ const RoleSelection = ({ navigation }) => {
       } catch (error) {
         console.error('Error during OTP submission:', error);
       }
-      handleSaveSelection()
-      navigation.navigate('Home')
+      handleSaveSelection();
+      navigation.navigate('Home');
       setOTPModalVisible(false);
     } else {
       Alert.alert('Invalid OTP', 'The OTP you entered is incorrect.');
     }
   };
-
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#1E1E1E' }}>

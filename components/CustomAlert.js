@@ -1,17 +1,20 @@
 import React, { useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const CustomAlert = ({ visible, message, onConfirm, onCancel }) => {
   const scaleValue = new Animated.Value(0);
 
   useEffect(() => {
+    console.log('CustomAlert useEffect triggered, visible:', visible);
     if (visible) {
       Animated.spring(scaleValue, {
         toValue: 1,
         friction: 8,
-        useNativeDriver: true,
+        useNativeDriver: true, // Set to true for better performance
       }).start();
+    } else {
+      scaleValue.setValue(0); // Reset the scale value when the modal is not visible
     }
   }, [visible]);
 
@@ -21,6 +24,7 @@ const CustomAlert = ({ visible, message, onConfirm, onCancel }) => {
       animationType="none"
       visible={visible}
       onRequestClose={onCancel}
+      style={{ zIndex: 1000 }} // Ensure it has a high z-index
     >
       <View style={styles.alertContainer}>
         <Animated.View style={[styles.alertBox, { transform: [{ scale: scaleValue }] }]}>
@@ -46,6 +50,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 9999, // Ensure it's on top
   },
   alertBox: {
     width: 300,
@@ -53,11 +58,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 10,
     alignItems: 'center',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    zIndex: 10000,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
   },
   alertIcon: {
     marginBottom: 20,
