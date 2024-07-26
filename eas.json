@@ -1,14 +1,13 @@
 {
   "build": {
     "development": {
-      "distribution": "internal",
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       }
     }
   }

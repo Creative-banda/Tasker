@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ref, get, set } from 'firebase/database';
+import { ref, get, update } from 'firebase/database';
 import { database } from '../components/firebase';
 import CustomModal from '../components/CustomModal';
 import CrossIcon from '../assets/SVG/cross';
@@ -26,7 +26,8 @@ const RoleSelection = ({ navigation }) => {
   const [NameWithEmail, setNameWithEmail] = useState([]);
   const [isAlertVisible, setAlertVisible] = useState(false);
   const [SelectedUser, SetSelectedUser] = useState("");
-  const [sending, setSending] = useState(false);
+  const [sending, setSending] = useState(false);  
+  const [ExpoToken, setExpoToken] = useState("");
 
   useEffect(() => {
     fetchRoles();
@@ -45,6 +46,21 @@ const RoleSelection = ({ navigation }) => {
     }
   }, [team]);
 
+  useEffect(() => {
+    const fetchToken = async () => {
+      let token = await AsyncStorage.getItem('expoPushToken');
+      if (!token) {
+        setTimeout(fetchToken, 1000);
+      } else {
+        console.log('Token fetched:', token);
+        setExpoToken(token);
+      }
+    };
+  
+    fetchToken();
+  }, []);
+  
+
   const fetchRoles = async () => {
     console.log("Fetching Roles");
     try {
@@ -53,6 +69,10 @@ const RoleSelection = ({ navigation }) => {
       if (snapshot.exists()) {
         const rolesData = Object.keys(snapshot.val());
         setRoles(rolesData);
+        
+        const token = await AsyncStorage.getItem('expoPushToken');
+        console.log("Expo Push Token:", token);
+        setExpoToken(token); // Use setExpoToken to update the state
       }
     } catch (error) {
       console.error('Error fetching roles from Firebase:', error);
@@ -157,7 +177,6 @@ const RoleSelection = ({ navigation }) => {
       SetSelectedUser(selectedPerson);
       console.log("Selected Person : ", selectedPerson);
       setAlertVisible(true);
-      console.log("Alert Visible:", isAlertVisible);
     }
   };
 
@@ -166,8 +185,7 @@ const RoleSelection = ({ navigation }) => {
     console.log("Generated OTP:", confirm_OTP);
     SetConfirmOtp(confirm_OTP);
     setAlertVisible(false);
-    // sendEmail(SelectedUser.email, confirm_OTP);
-    setOTPModalVisible(true)
+    sendEmail(SelectedUser.email, confirm_OTP);
   };
 
   const handleFilterSearch = (query) => {
@@ -191,8 +209,8 @@ const RoleSelection = ({ navigation }) => {
 
   const sendEmail = async (mail, message) => {
     setSending(true);
-    const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
     try {
+      const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
       const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Login OTP")}`);
       const text = await res.text();
       console.log(text);
@@ -214,29 +232,35 @@ const RoleSelection = ({ navigation }) => {
   };
 
   const handleOtpSubmit = async () => {
+    console.log("OTP Submitted:", otp, "Expected OTP:", Confirm_otp); // Debug log
     if (otp === Confirm_otp) {
       try {
         const token = await AsyncStorage.getItem('expoPushToken');
-        console.log("Token : ", token);
-
+        if (!token) {
+          console.error("Token is null. Ensure the token is stored in AsyncStorage.");
+          return;
+        }
+        console.log("Token before updating Firebase:", token);
+  
         if (SelectedUser.email) {
           const adminRef = ref(database, 'Admin');
           const snapshot = await get(adminRef);
-
+  
           if (snapshot.exists()) {
             const adminData = snapshot.val();
             let userKey = null;
-
+  
             for (const key in adminData) {
               if (adminData[key].email === SelectedUser.email) {
                 userKey = key;
                 break;
               }
             }
-
+  
             if (userKey !== null) {
               const userRef = ref(database, `Admin/${userKey}`);
-              await set(userRef, { ...adminData[userKey], token });
+              console.log("Updating token for user:", SelectedUser.email, "with key:", userKey);
+              await update(userRef, { token });
               console.log("Token updated for user:", SelectedUser.email);
             } else {
               console.log("No matching email found in Admin node.");
@@ -251,12 +275,12 @@ const RoleSelection = ({ navigation }) => {
         console.error('Error during OTP submission:', error);
       }
       handleSaveSelection();
-      navigation.navigate('Home');
       setOTPModalVisible(false);
     } else {
       Alert.alert('Invalid OTP', 'The OTP you entered is incorrect.');
     }
   };
+  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#1E1E1E' }}>
@@ -312,9 +336,9 @@ const RoleSelection = ({ navigation }) => {
           filterEnabled={false}
         />
         {sending ?
-        <ActivityIndicator size="large" color="#FFFFFF" /> :
-        <Text></Text>
-      } 
+          <ActivityIndicator size="large" color="#FFFFFF" /> :
+          <Text></Text>
+        }
 
         <CustomModal
           visible={isNameDropdownVisible}
