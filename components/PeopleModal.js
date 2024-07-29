@@ -36,20 +36,34 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
     
     const sendNotification = async (token, message) => {
         try {
-          const response = await axios.post('https://taskerserver.onrender.com/send-notification', {
-            token,
-            message,
-          });
-      
-          if (response.data.success) {
-            console.log('Notification sent successfully:', response.data.ticketChunk);
-          } else {
-            console.error('Failed to send notification:', response.data.error);
-          }
+            const response = await axios.post('https://taskerserver.onrender.com/send-notification', {
+                token,
+                message,
+            });
+    
+            if (response.data.success) {
+                console.log('Notification sent successfully:', response.data.ticketChunk);
+            } else {
+                console.error('Failed to send notification:', response.data.error);
+            }
         } catch (error) {
-          console.error('Error sending notification:', error);
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                console.error('Error response data:', error.response.data);
+                console.error('Error response status:', error.response.status);
+                console.error('Error response headers:', error.response.headers);
+            } else if (error.request) {
+                // The request was made but no response was received
+                console.error('Error request data:', error.request);
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                console.error('Error message:', error.message);
+            }
+            console.error('Error config:', error.config);
         }
-      };
+    };
+    
 
 
     const handleAssignTask = async () => {
@@ -92,6 +106,8 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
 
             Alert.alert('Success', `Task assigned to ${selectedPerson.name} and reminder set for ${days} day(s), ${hours} hour(s), and ${minutes} minute(s) from now.`);
             setTask('');
+            console.log(selectedPerson.token);
+            console.log(`Task assigned by ${userName} Task: ${task}`);
             sendNotification(selectedPerson.token, `Task assigned by ${userName} Task: ${task}`);
             setSelectedPerson(null);
             setDays(0);
