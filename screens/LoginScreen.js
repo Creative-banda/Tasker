@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CommonActions } from '@react-navigation/native';
 import { ref, get, update } from 'firebase/database';
 import { database } from '../components/firebase';
 import CustomModal from '../components/CustomModal';
@@ -26,7 +27,7 @@ const RoleSelection = ({ navigation }) => {
   const [NameWithEmail, setNameWithEmail] = useState([]);
   const [isAlertVisible, setAlertVisible] = useState(false);
   const [SelectedUser, SetSelectedUser] = useState("");
-  const [sending, setSending] = useState(false);  
+  const [sending, setSending] = useState(false);
   const [ExpoToken, setExpoToken] = useState("");
 
   useEffect(() => {
@@ -56,10 +57,10 @@ const RoleSelection = ({ navigation }) => {
         setExpoToken(token);
       }
     };
-  
+
     fetchToken();
   }, []);
-  
+
 
   const fetchRoles = async () => {
     console.log("Fetching Roles");
@@ -69,7 +70,7 @@ const RoleSelection = ({ navigation }) => {
       if (snapshot.exists()) {
         const rolesData = Object.keys(snapshot.val());
         setRoles(rolesData);
-        
+
         const token = await AsyncStorage.getItem('expoPushToken');
         console.log("Expo Push Token:", token);
         setExpoToken(token); // Use setExpoToken to update the state
@@ -185,6 +186,7 @@ const RoleSelection = ({ navigation }) => {
     console.log("Generated OTP:", confirm_OTP);
     SetConfirmOtp(confirm_OTP);
     setAlertVisible(false);
+
     sendEmail(SelectedUser.email, confirm_OTP);
   };
 
@@ -232,7 +234,7 @@ const RoleSelection = ({ navigation }) => {
   };
 
   const handleOtpSubmit = async () => {
-    console.log("OTP Submitted:", otp, "Expected OTP:", Confirm_otp); // Debug log
+    console.log("OTP Submitted:", otp, "Expected OTP:", Confirm_otp);
     if (otp === Confirm_otp) {
       try {
         const token = await AsyncStorage.getItem('expoPushToken');
@@ -241,22 +243,22 @@ const RoleSelection = ({ navigation }) => {
           return;
         }
         console.log("Token before updating Firebase:", token);
-  
+
         if (SelectedUser.email) {
           const adminRef = ref(database, 'Admin');
           const snapshot = await get(adminRef);
-  
+
           if (snapshot.exists()) {
             const adminData = snapshot.val();
             let userKey = null;
-  
+
             for (const key in adminData) {
               if (adminData[key].email === SelectedUser.email) {
                 userKey = key;
                 break;
               }
             }
-  
+
             if (userKey !== null) {
               const userRef = ref(database, `Admin/${userKey}`);
               console.log("Updating token for user:", SelectedUser.email, "with key:", userKey);
@@ -275,12 +277,18 @@ const RoleSelection = ({ navigation }) => {
         console.error('Error during OTP submission:', error);
       }
       handleSaveSelection();
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        })
+      );
       setOTPModalVisible(false);
     } else {
       Alert.alert('Invalid OTP', 'The OTP you entered is incorrect.');
     }
   };
-  
+
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#1E1E1E' }}>

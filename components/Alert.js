@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 
-const Alert = ({ visible, message, onOkay}) => {
+const Alert = ({ visible, message, onOkay }) => {
   return (
     <Modal
       transparent={true}
@@ -10,18 +9,15 @@ const Alert = ({ visible, message, onOkay}) => {
       animationType="fade"
     >
       <View style={styles.centeredView}>
-        <LinearGradient
-          colors={['#2c2c2c', '#1a1a1a']}
-          style={styles.modalView}
-        >
+        <View style={styles.modalView}>
           <Text style={styles.modalText}>{message}</Text>
           <TouchableOpacity
             style={styles.button}
             onPress={onOkay}
           >
-            <Text style={styles.textStyle}>Okay</Text>
+            <Text style={styles.buttonText}>Okay</Text>
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
       </View>
     </Modal>
   );
@@ -32,12 +28,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   modalView: {
-    margin: 20,
-    borderRadius: 20,
-    padding: 35,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 6,
+    padding: 20,
+    width: '80%',
+    maxWidth: 350,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
@@ -47,24 +45,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
-    width: '80%',
   },
   modalText: {
     marginBottom: 20,
-    textAlign: 'center',
+    color: '#E0E0E0',
     fontSize: 16,
-    color: '#ddd',
+    lineHeight: 24,
+    textAlign: 'center',
   },
   button: {
-    borderRadius: 10,
-    padding: 10,
-    elevation: 2,
-    backgroundColor: '#2EB5AB',
-    minWidth: '40%',
+    backgroundColor: '#333333',
+    borderRadius: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    minWidth: 120,
   },
-  textStyle: {
-    color: 'white',
-    fontWeight: 'bold',
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
     textAlign: 'center',
   },
 });

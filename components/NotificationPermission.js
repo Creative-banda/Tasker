@@ -25,7 +25,7 @@ const NotificationPermission = () => {
           return;
         }
 
-        const { data: token } = await Notifications.getExpoPushTokenAsync();
+        const { data: token } = await Notifications.getExpoPushTokenAsync({projectId: "24108c42-a068-420e-8774-2c0882980859"});
         if (isMounted) {
           console.log('Expo Push Token:', token);
           await AsyncStorage.setItem('expoPushToken', token);

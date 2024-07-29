@@ -19,7 +19,8 @@
         "foregroundImage": "./assets/ic_launcher.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.ahtesham_khan007.Tasker"
+      "package": "com.ahtesham_khan007.Tasker",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
