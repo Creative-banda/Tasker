@@ -1,8 +1,6 @@
 import React, { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 
 const NotificationPermission = () => {
   useEffect(() => {
@@ -16,28 +14,10 @@ const NotificationPermission = () => {
           return;
         }
 
-        // Handle notification permissions differently for iOS and Android
-        let status;
-
-        if (Platform.OS === 'ios') {
-          // iOS specific permission check
+        let { status } = await Notifications.getPermissionsAsync();
+        if (status !== 'granted') {
           const permissionResponse = await Notifications.requestPermissionsAsync();
           status = permissionResponse.status;
-        } else if (Platform.OS === 'android') {
-          if (Device.osVersion >= 33) { // Android 13+
-            // Check for POST_NOTIFICATIONS permission
-            const { status: currentStatus } = await Notifications.getPermissionsAsync();
-            if (currentStatus !== 'granted') {
-              const permissionResponse = await Notifications.requestPermissionsAsync();
-              status = permissionResponse.status;
-            } else {
-              status = currentStatus;
-            }
-          } else {
-            // For Android versions below 13
-            const permissionResponse = await Notifications.requestPermissionsAsync();
-            status = permissionResponse.status;
-          }
         }
 
         if (status !== 'granted') {
@@ -45,8 +25,7 @@ const NotificationPermission = () => {
           return;
         }
 
-        // Retrieve and store the Expo push token
-        const { data: token } = await Notifications.getExpoPushTokenAsync();
+        const { data: token } = await Notifications.getExpoPushTokenAsync({projectId: "24108c42-a068-420e-8774-2c0882980859"});
         if (isMounted) {
           console.log('Expo Push Token:', token);
           await AsyncStorage.setItem('expoPushToken', token);
