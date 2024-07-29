@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CommonActions } from '@react-navigation/native';
 import { ref, get, update } from 'firebase/database';
 import { database } from '../components/firebase';
 import CustomModal from '../components/CustomModal';
 import CrossIcon from '../assets/SVG/cross';
 import CustomAlert from '../components/CustomAlert';
 import DownArrow from '../assets/SVG/DownArrow';
-
 
 const RoleSelection = ({ navigation }) => {
   const [role, setRole] = useState('');
@@ -53,6 +53,7 @@ const RoleSelection = ({ navigation }) => {
       if (!token) {
         setTimeout(fetchToken, 1000);
       } else {
+        console.log('Token fetched:', token);
         setExpoToken(token);
       }
     };
@@ -70,6 +71,9 @@ const RoleSelection = ({ navigation }) => {
         const rolesData = Object.keys(snapshot.val());
         setRoles(rolesData);
 
+        const token = await AsyncStorage.getItem('expoPushToken');
+        console.log("Expo Push Token:", token);
+        setExpoToken(token); // Use setExpoToken to update the state
       }
     } catch (error) {
       console.error('Error fetching roles from Firebase:', error);
@@ -88,6 +92,7 @@ const RoleSelection = ({ navigation }) => {
           const teamsData = Object.values(snapshot.val());
           setTeams(teamsData);
         } else {
+          console.log(`No teams found for role: ${role}`);
         }
       }
     } catch (error) {
@@ -106,6 +111,9 @@ const RoleSelection = ({ navigation }) => {
         if (snapshot.exists()) {
           fetchedData = snapshot.val();
           namesData = Object.keys(fetchedData).map(key => fetchedData[key].name);
+          console.log("Admin Data Fetched :", namesData);
+        } else {
+          console.log('No names found for role: admin');
         }
       } else if (role === 'TL' && team) {
         const teamRef = ref(database, `${team}`);
@@ -113,6 +121,9 @@ const RoleSelection = ({ navigation }) => {
         if (snapshot.exists()) {
           fetchedData = snapshot.val();
           namesData = fetchedData.map(item => item.name);
+          console.log("TL Data", fetchedData);
+        } else {
+          console.log(`No names found for team: ${team}`);
         }
       } else if (role === 'User' && team) {
         const adminRef = ref(database, 'Admin');
@@ -121,7 +132,8 @@ const RoleSelection = ({ navigation }) => {
           const adminData = snapshot.val();
           fetchedData = Object.values(adminData).filter(item => item.Team === team);
           namesData = fetchedData.map(item => item.name);
-        
+        } else {
+          console.log(`No names found for team: ${team}`);
         }
       }
 
@@ -164,14 +176,17 @@ const RoleSelection = ({ navigation }) => {
     const selectedPerson = NameWithEmail.find(n => n.name === selectedName);
     if (selectedPerson) {
       SetSelectedUser(selectedPerson);
+      console.log("Selected Person : ", selectedPerson);
       setAlertVisible(true);
     }
   };
 
   const ConfirmSend = () => {
     const confirm_OTP = Math.floor(1000 + Math.random() * 9000).toString();
+    console.log("Generated OTP:", confirm_OTP);
     SetConfirmOtp(confirm_OTP);
     setAlertVisible(false);
+
     sendEmail(SelectedUser.email, confirm_OTP);
   };
 
@@ -200,6 +215,7 @@ const RoleSelection = ({ navigation }) => {
       const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
       const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Login OTP")}`);
       const text = await res.text();
+      console.log(text);
 
       Alert.alert(
         "Email Sent",
@@ -218,12 +234,15 @@ const RoleSelection = ({ navigation }) => {
   };
 
   const handleOtpSubmit = async () => {
+    console.log("OTP Submitted:", otp, "Expected OTP:", Confirm_otp);
     if (otp === Confirm_otp) {
       try {
-        if (!ExpoToken) {
+        const token = await AsyncStorage.getItem('expoPushToken');
+        if (!token) {
           console.error("Token is null. Ensure the token is stored in AsyncStorage.");
           return;
         }
+        console.log("Token before updating Firebase:", token);
 
         if (SelectedUser.email) {
           const adminRef = ref(database, 'Admin');
@@ -242,14 +261,28 @@ const RoleSelection = ({ navigation }) => {
 
             if (userKey !== null) {
               const userRef = ref(database, `Admin/${userKey}`);
-              await update(userRef, { token: ExpoToken });
+              console.log("Updating token for user:", SelectedUser.email, "with key:", userKey);
+              await update(userRef, { token });
+              console.log("Token updated for user:", SelectedUser.email);
+            } else {
+              console.log("No matching email found in Admin node.");
             }
+          } else {
+            console.log("Admin node does not exist in the database.");
           }
+        } else {
+          console.log("No email selected for the user.");
         }
       } catch (error) {
         console.error('Error during OTP submission:', error);
       }
       handleSaveSelection();
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        })
+      );
       setOTPModalVisible(false);
     } else {
       Alert.alert('Invalid OTP', 'The OTP you entered is incorrect.');

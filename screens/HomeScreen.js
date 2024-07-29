@@ -83,15 +83,6 @@ const HomeScreen = ({ navigation }) => {
         }, [tasks])
     );
 
-    const dltstorage = async () => {
-        try {
-            await AsyncStorage.clear();
-            navigation.navigate('RoleSelection');
-        } catch (error) {
-            console.error('Error clearing AsyncStorage:', error);
-        }
-    };
-
     const initializeData = async () => {
         try {
             const userTeam = await AsyncStorage.getItem('userTeam');
@@ -272,9 +263,8 @@ const HomeScreen = ({ navigation }) => {
                     message={alertMessage}
                     onOkay={() => setCustomAlertVisible(false)}
                 />
-                <TouchableOpacity onPress={dltstorage}>
-                    <Text style={styles.header}>Tasker</Text>
-                </TouchableOpacity>
+                <Text style={styles.header}>Tasker</Text>
+
                 {filtercheck && <Text style={styles.FilterPerson}> Selected Filter : {filterperson}</Text>}
                 <View style={styles.content}>
                     {tasks.length === 0 ? (
