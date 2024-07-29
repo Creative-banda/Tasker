@@ -20,9 +20,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.ahtesham_khan007.Tasker",
-      "permissions": [
-        "POST_NOTIFICATIONS"
-      ]
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
