@@ -10,6 +10,7 @@ import AddRemoveScreen from './screens/AddRemoveScreen';
 import RoleSelection from './screens/LoginScreen';
 import { useFonts } from 'expo-font';
 import NotificationPermission from './components/NotificationPermission';
+import * as Notifications from 'expo-notifications';
 
 enableScreens();
 
@@ -39,6 +40,16 @@ const App = () => {
     };
 
     initializeApp();
+  }, []);
+
+  useEffect(() => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
   }, []);
 
   if (initialRoute === null || !fontsLoaded) {

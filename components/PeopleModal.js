@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, Alert, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import Modal from 'react-native-modal';
 import { AntDesign } from '@expo/vector-icons';
 import CustomDropdown from './CustomDropdown';
@@ -33,38 +33,24 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
         handleNewSearch(item.name);
     };
 
-    
+
     const sendNotification = async (token, message) => {
+        console.log("This is the token for reciever : ", token);
         try {
             const response = await axios.post('https://taskerserver.onrender.com/send-notification', {
                 token,
                 message,
             });
-    
+
             if (response.data.success) {
                 console.log('Notification sent successfully:', response.data.ticketChunk);
             } else {
                 console.error('Failed to send notification:', response.data.error);
             }
         } catch (error) {
-            if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
-                console.error('Error response data:', error.response.data);
-                console.error('Error response status:', error.response.status);
-                console.error('Error response headers:', error.response.headers);
-            } else if (error.request) {
-                // The request was made but no response was received
-                console.error('Error request data:', error.request);
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                console.error('Error message:', error.message);
-            }
-            console.error('Error config:', error.config);
+            console.error('Error response data:', error.response);
         }
     };
-    
-
 
     const handleAssignTask = async () => {
         if (!selectedPerson) {
@@ -88,6 +74,7 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
             taskEndTime.setDate(taskStartTime.getDate() + days);
             taskEndTime.setHours(taskStartTime.getHours() + hours);
             taskEndTime.setMinutes(taskStartTime.getMinutes() + minutes);
+            const Usertoken = await AsyncStorage.getItem('expoPushToken');
 
             const newTask = {
                 title: task,
@@ -97,8 +84,9 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
                 endTime: taskEndTime.getTime(),
                 assignedBy: userName,
                 assignedTo: selectedPerson.name,
+                token: Usertoken,
+
             };
-            console.log(selectedPerson.token)
 
             const tasksRef = ref(database, `tasks`);
             const newTaskRef = push(tasksRef);
@@ -123,78 +111,150 @@ const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, f
     };
 
     return (
-        <Modal
-            isVisible={isVisible}
-            onBackdropPress={toggleModal}
-            onBackButtonPress={toggleModal}
-        >
-            <View style={styles.modalContent}>
-                <View style={styles.searchBarContainer}>
-                    <AntDesign name="search1" size={20} color="#888" style={styles.icon} />
-                    <TextInput
-                        style={styles.searchBar}
-                        placeholder="Search name"
-                        placeholderTextColor="#888"
-                        onChangeText={handleNewSearch}
-                        value={searchTerm}
-                    />
-                </View>
-                {!selectedPerson ? (
-                    <FlatList
-                        data={filteredData}
-                        keyExtractor={(item) => item.id.toString()}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity style={styles.item} onPress={() => handleItemPress(item)}>
-                                <Text style={styles.itemText}>{item.name}</Text>
-                            </TouchableOpacity>
-                        )}
-                        ListEmptyComponent={<Text style={styles.noResults}>No results found</Text>}
-                    />
+
+            <Modal
+                isVisible={isVisible}
+                onBackdropPress={toggleModal}
+                onBackButtonPress={toggleModal}
+            >
+                {Platform.OS === 'ios' ? (
+                    <KeyboardAvoidingView behavior="padding">
+                        <View style={styles.modalContent}>
+                            <View style={styles.searchBarContainer}>
+                                <AntDesign name="search1" size={20} color="#888" style={styles.icon} />
+                                <TextInput
+                                    style={styles.searchBar}
+                                    placeholder="Search name"
+                                    placeholderTextColor="#888"
+                                    onChangeText={handleNewSearch}
+                                    value={searchTerm}
+                                />
+                            </View>
+                            {!selectedPerson ? (
+                                <FlatList
+                                    data={filteredData}
+                                    keyExtractor={(item) => item.id.toString()}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity style={styles.item} onPress={() => handleItemPress(item)}>
+                                            <Text style={styles.itemText}>{item.name}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    ListEmptyComponent={<Text style={styles.noResults}>No results found</Text>}
+                                />
+                            ) : (
+                                <View style={styles.selectedPersonContainer}>
+                                    <TextInput
+                                        style={[styles.input, { height: 130, textAlignVertical: 'top' }]}
+                                        placeholder="Assign task"
+                                        placeholderTextColor="#888"
+                                        value={task}
+                                        onChangeText={setTask}
+                                        multiline={true}
+                                    />
+                                    <View style={styles.dropdownRow}>
+                                        <CustomDropdown
+                                            label="Days"
+                                            options={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+                                            selectedValue={days}
+                                            onValueChange={setDays}
+                                            style={styles.dropdown}
+                                        />
+                                        <CustomDropdown
+                                            label="Hour"
+                                            options={[...Array(24).keys()]}
+                                            selectedValue={hours}
+                                            onValueChange={setHours}
+                                            style={styles.dropdown}
+                                        />
+                                        <CustomDropdown
+                                            label="Mins"
+                                            options={[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]}
+                                            selectedValue={minutes}
+                                            onValueChange={setMinutes}
+                                            style={styles.dropdown}
+                                        />
+                                    </View>
+                                    <TouchableOpacity style={styles.assignButton} onPress={handleAssignTask}>
+                                        <Text style={styles.buttonText}>Assign Task & Set Reminder</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+                            {!selectedPerson && (
+                                <TouchableOpacity style={styles.closeButton} onPress={toggleModal}>
+                                    <Text style={styles.closeButtonText}>Close</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </KeyboardAvoidingView>
                 ) : (
-                    <View style={styles.selectedPersonContainer}>
-                        <TextInput
-                            style={[styles.input, { height: 130, textAlignVertical: 'top' }]}
-                            placeholder="Assign task"
-                            placeholderTextColor="#888"
-                            value={task}
-                            onChangeText={setTask}
-                            multiline={true}
-                        />
-                        <View style={styles.dropdownRow}>
-                            <CustomDropdown
-                                label="Days"
-                                options={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-                                selectedValue={days}
-                                onValueChange={setDays}
-                                style={styles.dropdown}
-                            />
-                            <CustomDropdown
-                                label="Hour"
-                                options={[...Array(24).keys()]}
-                                selectedValue={hours}
-                                onValueChange={setHours}
-                                style={styles.dropdown}
-                            />
-                            <CustomDropdown
-                                label="Mins"
-                                options={[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]}
-                                selectedValue={minutes}
-                                onValueChange={setMinutes}
-                                style={styles.dropdown}
+                    <View style={styles.modalContent}>
+                        <View style={styles.searchBarContainer}>
+                            <AntDesign name="search1" size={20} color="#888" style={styles.icon} />
+                            <TextInput
+                                style={styles.searchBar}
+                                placeholder="Search name"
+                                placeholderTextColor="#888"
+                                onChangeText={handleNewSearch}
+                                value={searchTerm}
                             />
                         </View>
-                        <TouchableOpacity style={styles.assignButton} onPress={handleAssignTask}>
-                            <Text style={styles.buttonText}>Assign Task & Set Reminder</Text>
-                        </TouchableOpacity>
+                        {!selectedPerson ? (
+                            <FlatList
+                                data={filteredData}
+                                keyExtractor={(item) => item.id.toString()}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity style={styles.item} onPress={() => handleItemPress(item)}>
+                                        <Text style={styles.itemText}>{item.name}</Text>
+                                    </TouchableOpacity>
+                                )}
+                                ListEmptyComponent={<Text style={styles.noResults}>No results found</Text>}
+                            />
+                        ) : (
+                            <View style={styles.selectedPersonContainer}>
+                                <TextInput
+                                    style={[styles.input, { height: 130, textAlignVertical: 'top' }]}
+                                    placeholder="Assign task"
+                                    placeholderTextColor="#888"
+                                    value={task}
+                                    onChangeText={setTask}
+                                    multiline={true}
+                                />
+                                <View style={styles.dropdownRow}>
+                                    <CustomDropdown
+                                        label="Days"
+                                        options={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+                                        selectedValue={days}
+                                        onValueChange={setDays}
+                                        style={styles.dropdown}
+                                    />
+                                    <CustomDropdown
+                                        label="Hour"
+                                        options={[...Array(24).keys()]}
+                                        selectedValue={hours}
+                                        onValueChange={setHours}
+                                        style={styles.dropdown}
+                                    />
+                                    <CustomDropdown
+                                        label="Mins"
+                                        options={[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]}
+                                        selectedValue={minutes}
+                                        onValueChange={setMinutes}
+                                        style={styles.dropdown}
+                                    />
+                                </View>
+                                <TouchableOpacity style={styles.assignButton} onPress={handleAssignTask}>
+                                    <Text style={styles.buttonText}>Assign Task & Set Reminder</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                        {!selectedPerson && (
+                            <TouchableOpacity style={styles.closeButton} onPress={toggleModal}>
+                                <Text style={styles.closeButtonText}>Close</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
-                {!selectedPerson && (
-                    <TouchableOpacity style={styles.closeButton} onPress={toggleModal}>
-                        <Text style={styles.closeButtonText}>Close</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-        </Modal>
+            </Modal>
     );
 };
 
@@ -202,6 +262,7 @@ const styles = StyleSheet.create({
     modalContent: {
         backgroundColor: '#2a2a2a',
         padding: 22,
+        marginVertical:75,
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 10,
@@ -258,8 +319,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     closeButton: {
-        marginTop: 20,
+        marginTop: 10,
         padding: 10,
+        marginBottom:20,
         backgroundColor: '#5BC0EB',
         borderRadius: 25,
         width: '100%',

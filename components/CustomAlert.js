@@ -6,15 +6,14 @@ const CustomAlert = ({ visible, message, onConfirm, onCancel }) => {
   const scaleValue = new Animated.Value(0);
 
   useEffect(() => {
-    console.log('CustomAlert useEffect triggered, visible:', visible);
     if (visible) {
       Animated.spring(scaleValue, {
         toValue: 1,
         friction: 8,
-        useNativeDriver: true, // Set to true for better performance
+        useNativeDriver: true, 
       }).start();
     } else {
-      scaleValue.setValue(0); // Reset the scale value when the modal is not visible
+      scaleValue.setValue(0);
     }
   }, [visible]);
 
@@ -50,7 +49,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 9999, // Ensure it's on top
   },
   alertBox: {
     width: 300,

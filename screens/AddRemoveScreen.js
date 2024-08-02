@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { ref, get, set, remove } from 'firebase/database';
 import { database } from '../components/firebase';
 import CustomAlert from '../components/CustomAlert';
@@ -63,7 +63,7 @@ const AddRemoveScreen = () => {
     const handleAddPersonWithEmail = async (email, team) => {
         if (personToAdd.name && personToAdd.team) {
             try {
-                const personId = generateRandomId(); 
+                const personId = generateRandomId();
                 const newPersonRef = ref(database, `Admin/${personId}`);
                 const newPersonData = {
                     Team: personToAdd.team,
@@ -110,50 +110,55 @@ const AddRemoveScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.header}>Add or Remove People</Text>
-            <FlatList
-                data={people}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.personItem}>
-                        <Text style={styles.personName}>{item.name}</Text>
-                        <TouchableOpacity onPress={() => handleRemovePerson(item)} style={styles.removeButton}>
-                            <Text style={styles.removeButtonText}>Remove</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Enter new person"
-                placeholderTextColor="#ccc"
-                value={newPerson}
-                onChangeText={setNewPerson}
-            />
-            <TouchableOpacity onPress={handleAddPerson} style={styles.addButton}>
-                <Text style={styles.addButtonText}>Add</Text>
-            </TouchableOpacity>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#333" }}>
 
-            <CustomAlert
-                visible={alertVisible}
-                message={`Are you sure you want to remove ${personToRemove?.name}?`}
-                onConfirm={handleConfirmRemove}
-                onCancel={handleCancelRemove}
-            />
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : null} style={{ flex: 1 }}>
+                <View style={styles.container}>
+                    <Text style={styles.header}>Add or Remove People</Text>
+                    <FlatList
+                        data={people}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <View style={styles.personItem}>
+                                <Text style={styles.personName}>{item.name}</Text>
+                                <TouchableOpacity onPress={() => handleRemovePerson(item)} style={styles.removeButton}>
+                                    <Text style={styles.removeButtonText}>Remove</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter new person"
+                        placeholderTextColor="#ccc"
+                        value={newPerson}
+                        onChangeText={setNewPerson}
+                    />
+                    <TouchableOpacity onPress={handleAddPerson} style={styles.addButton}>
+                        <Text style={styles.addButtonText}>Add</Text>
+                    </TouchableOpacity>
 
-            <TeamSelectionModal
-                visible={teamModalVisible}
-                onClose={() => setTeamModalVisible(false)}
-                onSelectTeam={handleSelectTeam}
-            />
+                    <CustomAlert
+                        visible={alertVisible}
+                        message={`Are you sure you want to remove ${personToRemove?.name}?`}
+                        onConfirm={handleConfirmRemove}
+                        onCancel={handleCancelRemove}
+                    />
 
-            <AddPersonModal
-                visible={addPersonModalVisible}
-                onClose={() => setAddPersonModalVisible(false)}
-                onSubmit={handleAddPersonWithEmail}
-            />
-        </View>
+                    <TeamSelectionModal
+                        visible={teamModalVisible}
+                        onClose={() => setTeamModalVisible(false)}
+                        onSelectTeam={handleSelectTeam}
+                    />
+
+                    <AddPersonModal
+                        visible={addPersonModalVisible}
+                        onClose={() => setAddPersonModalVisible(false)}
+                        onSubmit={handleAddPersonWithEmail}
+                    />
+                </View>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 };
 

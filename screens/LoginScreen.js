@@ -25,7 +25,6 @@ const RoleSelection = ({ navigation }) => {
   const [filteredNames, setFilteredNames] = useState([]);
   const [filterSearchQuery, setFilterSearchQuery] = useState('');
   const [NameWithEmail, setNameWithEmail] = useState([]);
-  const [isAlertVisible, setAlertVisible] = useState(false);
   const [SelectedUser, SetSelectedUser] = useState("");
   const [sending, setSending] = useState(false);
   const [ExpoToken, setExpoToken] = useState("");
@@ -71,9 +70,6 @@ const RoleSelection = ({ navigation }) => {
         const rolesData = Object.keys(snapshot.val());
         setRoles(rolesData);
 
-        const token = await AsyncStorage.getItem('expoPushToken');
-        console.log("Expo Push Token:", token);
-        setExpoToken(token); // Use setExpoToken to update the state
       }
     } catch (error) {
       console.error('Error fetching roles from Firebase:', error);
@@ -176,18 +172,16 @@ const RoleSelection = ({ navigation }) => {
     const selectedPerson = NameWithEmail.find(n => n.name === selectedName);
     if (selectedPerson) {
       SetSelectedUser(selectedPerson);
-      console.log("Selected Person : ", selectedPerson);
-      setAlertVisible(true);
+      ConfirmSend(selectedPerson.email);
     }
   };
 
-  const ConfirmSend = () => {
+  const ConfirmSend = (mail) => {
     const confirm_OTP = Math.floor(1000 + Math.random() * 9000).toString();
     console.log("Generated OTP:", confirm_OTP);
     SetConfirmOtp(confirm_OTP);
-    setAlertVisible(false);
-
-    sendEmail(SelectedUser.email, confirm_OTP);
+    console.log("Selected User : ", mail);
+    sendEmail(mail, confirm_OTP);
   };
 
   const handleFilterSearch = (query) => {
@@ -212,14 +206,14 @@ const RoleSelection = ({ navigation }) => {
   const sendEmail = async (mail, message) => {
     setSending(true);
     try {
-      const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
-      const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Login OTP")}`);
-      const text = await res.text();
-      console.log(text);
+      // const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
+      // const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Login OTP")}`);
+      // const text = await res.text();
+      // console.log(text);
 
       Alert.alert(
         "Email Sent",
-        text,
+        "OTP Sent to " + mail,
         [
           {
             text: "OK",
@@ -237,12 +231,11 @@ const RoleSelection = ({ navigation }) => {
     console.log("OTP Submitted:", otp, "Expected OTP:", Confirm_otp);
     if (otp === Confirm_otp) {
       try {
-        const token = await AsyncStorage.getItem('expoPushToken');
-        if (!token) {
+        if (!ExpoToken) {
           console.error("Token is null. Ensure the token is stored in AsyncStorage.");
           return;
         }
-        console.log("Token before updating Firebase:", token);
+        console.log("Token before updating Firebase:", ExpoToken);
 
         if (SelectedUser.email) {
           const adminRef = ref(database, 'Admin');
@@ -262,7 +255,7 @@ const RoleSelection = ({ navigation }) => {
             if (userKey !== null) {
               const userRef = ref(database, `Admin/${userKey}`);
               console.log("Updating token for user:", SelectedUser.email, "with key:", userKey);
-              await update(userRef, { token });
+              await update(userRef, {token : ExpoToken });
               console.log("Token updated for user:", SelectedUser.email);
             } else {
               console.log("No matching email found in Admin node.");
@@ -277,12 +270,7 @@ const RoleSelection = ({ navigation }) => {
         console.error('Error during OTP submission:', error);
       }
       handleSaveSelection();
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Home' }],
-        })
-      );
+      
       setOTPModalVisible(false);
     } else {
       Alert.alert('Invalid OTP', 'The OTP you entered is incorrect.');
@@ -357,13 +345,6 @@ const RoleSelection = ({ navigation }) => {
           filterEnabled={true}
           filterQuery={filterSearchQuery}
           onFilterChange={handleFilterSearch}
-        />
-
-        <CustomAlert
-          visible={isAlertVisible}
-          message={`${"Are you sure you want to send OTP at"} ${SelectedUser.email}`}
-          onConfirm={ConfirmSend}
-          onCancel={() => setAlertVisible(false)}
         />
 
         <Modal visible={isOTPModalVisible} transparent animationType="slide">

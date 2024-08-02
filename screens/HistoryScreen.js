@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, TouchableWithoutFeedback, Alert, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ScrollView, TouchableWithoutFeedback, Alert, BackHandler, SafeAreaView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import Filter from '../assets/SVG/FilterIcon';
@@ -104,11 +104,11 @@ function HistoryScreen() {
                         try {
                             const historyRef = ref(database, 'history');
                             const historySnapshot = await get(historyRef);
-    
+
                             if (historySnapshot.exists()) {
                                 const historyData = historySnapshot.val();
                                 console.log('Fetched history data:', historyData);
-    
+
                                 // Prepare updates object
                                 let updates = {};
                                 selectedTasks.forEach(task => {
@@ -117,19 +117,19 @@ function HistoryScreen() {
                                         const historyTask = historyData[key];
                                         return historyTask.assignedBy === task.assignedBy && historyTask.title === task.title;
                                     });
-    
+
                                     if (keyToRemove) {
                                         updates[`/history/${keyToRemove}`] = null;
                                         console.log('Task to delete:', historyData[keyToRemove], 'with key:', keyToRemove);
                                     }
                                 });
-    
+
                                 console.log('Updates to apply:', updates);
-    
+
                                 // Apply updates
                                 await update(ref(database), updates);
                                 console.log('Firebase updated successfully');
-    
+
                                 // Update local state
                                 const remainingTasks = doneTasks.filter(task => !selectedTasks.some(selTask => selTask.assignedBy === task.assignedBy && selTask.title === task.title));
                                 setDoneTasks(remainingTasks);
@@ -149,7 +149,7 @@ function HistoryScreen() {
             ]
         );
     };
-            
+
 
 
     const handleCancelSelection = () => {
@@ -230,76 +230,79 @@ function HistoryScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerContainer}>
-                <Text style={styles.header}>History</Text>
-                <View style={styles.headerButtons}>
-                    <TouchableOpacity style={styles.iconButton} onPress={handleFilterTasks}>
-                        <Filter width={30} height={30} color="#FFFFFF" strokeWidth={1} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAllData}>
-                        <Text style={styles.deleteButtonText}>Delete All</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-            {filteredTasks.length === 0 ? (
-                <Text style={styles.noTasksText}>No completed tasks</Text>
-            ) : (
-                <FlatList
-                    data={filteredTasks}
-                    keyExtractor={(item) => `${item.assignedBy}-${item.assignedTo}-${item.title}-${item.id}`}
-                    renderItem={renderTask}
-                    contentContainerStyle={styles.list}
-                />
+        <SafeAreaView style={{flex:1, backgroundColor: '#1a1a1a',}}>
 
-
-            )}
-
-            {selectedTasks.length > 0 && (
-                <View style={styles.selectionActions}>
-                    <TouchableOpacity style={styles.actionButton} onPress={handleDeleteSelectedTasks}>
-                        <Text style={styles.actionButtonText}>Delete</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} onPress={handleCancelSelection}>
-                        <Text style={styles.actionButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            <Modal
-                visible={isDropdownVisible}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setDropdownVisible(false)}
-            >
-                <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
-                    <View style={styles.dropdownOverlay}>
-                        <View style={styles.dropdownContainer}>
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder="Search"
-                                placeholderTextColor="#888"
-                                value={filterSearchQuery}
-                                onChangeText={handleFilterSearch}
-                            />
-                            <ScrollView style={styles.scrollview}>
-                                {[{ id: 0, name: "All" }, ...filterPeople].filter(item =>
-                                    item.name.toLowerCase().includes(filterSearchQuery.toLowerCase())
-                                ).map(person => (
-                                    <TouchableOpacity
-                                        key={person.id}
-                                        onPress={() => handlePersonSelect(person)}
-                                        style={styles.dropdownItem}
-                                    >
-                                        <Text style={styles.dropdownItemText}>{person.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </View>
+            <View style={styles.container}>
+                <View style={styles.headerContainer}>
+                    <Text style={styles.header}>History</Text>
+                    <View style={styles.headerButtons}>
+                        <TouchableOpacity style={styles.iconButton} onPress={handleFilterTasks}>
+                            <Filter width={30} height={30} color="#FFFFFF" strokeWidth={1} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteAllData}>
+                            <Text style={styles.deleteButtonText}>Delete All</Text>
+                        </TouchableOpacity>
                     </View>
-                </TouchableWithoutFeedback>
-            </Modal>
-        </View>
+                </View>
+                {filteredTasks.length === 0 ? (
+                    <Text style={styles.noTasksText}>No completed tasks</Text>
+                ) : (
+                    <FlatList
+                        data={filteredTasks}
+                        keyExtractor={(item) => `${item.assignedBy}-${item.assignedTo}-${item.title}-${item.id}`}
+                        renderItem={renderTask}
+                        contentContainerStyle={styles.list}
+                    />
+
+
+                )}
+
+                {selectedTasks.length > 0 && (
+                    <View style={styles.selectionActions}>
+                        <TouchableOpacity style={styles.actionButton} onPress={handleDeleteSelectedTasks}>
+                            <Text style={styles.actionButtonText}>Delete</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.actionButton} onPress={handleCancelSelection}>
+                            <Text style={styles.actionButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                <Modal
+                    visible={isDropdownVisible}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setDropdownVisible(false)}
+                >
+                    <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
+                        <View style={styles.dropdownOverlay}>
+                            <View style={styles.dropdownContainer}>
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder="Search"
+                                    placeholderTextColor="#888"
+                                    value={filterSearchQuery}
+                                    onChangeText={handleFilterSearch}
+                                />
+                                <ScrollView style={styles.scrollview}>
+                                    {[{ id: 0, name: "All" }, ...filterPeople].filter(item =>
+                                        item.name.toLowerCase().includes(filterSearchQuery.toLowerCase())
+                                    ).map(person => (
+                                        <TouchableOpacity
+                                            key={person.id}
+                                            onPress={() => handlePersonSelect(person)}
+                                            style={styles.dropdownItem}
+                                        >
+                                            <Text style={styles.dropdownItemText}>{person.name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </Modal>
+            </View>
+        </SafeAreaView>
     );
 }
 
@@ -307,7 +310,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#1a1a1a',
-        paddingVertical: 20,
     },
     headerContainer: {
         flexDirection: 'row',

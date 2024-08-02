@@ -13,6 +13,7 @@ import AddIcon from "../assets/SVG/AddIcon";
 import { ref, get, remove, set, onValue } from 'firebase/database';
 import { database } from '../components/firebase';
 import Alert from '../components/Alert';
+import axios from 'axios';
 
 const HomeScreen = ({ navigation }) => {
     const [isModalVisible, setModalVisible] = useState(false);
@@ -169,8 +170,38 @@ const HomeScreen = ({ navigation }) => {
         }
     };
 
+    const sendNotification = async (token, message) => {
+        try {
+            const response = await axios.post('https://taskerserver.onrender.com/send-notification', {
+                token,
+                message,
+            });
+    
+            if (response.data.success) {
+                console.log('Notification sent successfully:', response.data.ticketChunk);
+            } else {
+                console.error('Failed to send notification:', response.data.error);
+            }
+        } catch (error) {
+            console.error('Error sending notification:', error.message);
+            if (error.response) {
+                console.error('Error response data:', error.response.data);
+                console.error('Error response status:', error.response.status);
+                console.error('Error response headers:', error.response.headers);
+            } else if (error.request) {
+                console.error('Error request data:', error.request);
+            } else {
+                console.error('Error message:', error.message);
+            }
+        }
+    };
+
     const handleMarkTaskDone = async () => {
         if (taskToMarkDone && taskToMarkDone.id) {
+            const username = await AsyncStorage.getItem('userName');
+            if (taskToMarkDone.assignedBy !== username) {
+                sendNotification(taskToMarkDone.token, "Task marked as done by " + username + " for " + taskToMarkDone.title);
+            }
             try {
                 const tasksRef = ref(database, `tasks/${taskToMarkDone.id}`);
                 const taskSnapshot = await get(tasksRef);
@@ -220,6 +251,15 @@ const HomeScreen = ({ navigation }) => {
         );
     };
 
+    const dltstorage = async () => {
+        try {
+            await AsyncStorage.clear();
+            navigation.navigate('RoleSelection');
+        } catch (error) {
+            console.error('Error clearing AsyncStorage:', error);
+        }
+    };
+
     const Addremove = async () => {
         const userRole = await AsyncStorage.getItem('userRole');
         if (userRole !== 'Admin') {
@@ -254,7 +294,7 @@ const HomeScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor:"#1a1a1a"}}>
 
             <LinearGradient colors={['#1a1a1a', '#333333']} style={styles.container}>
                 <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -263,7 +303,9 @@ const HomeScreen = ({ navigation }) => {
                     message={alertMessage}
                     onOkay={() => setCustomAlertVisible(false)}
                 />
-                <Text style={styles.header}>Tasker</Text>
+                <TouchableOpacity onPress={dltstorage}>
+                    <Text style={styles.header}>Tasker</Text>
+                </TouchableOpacity>
 
                 {filtercheck && <Text style={styles.FilterPerson}> Selected Filter : {filterperson}</Text>}
                 <View style={styles.content}>
@@ -415,9 +457,9 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     dropdownOverlay: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingVertical:70,
+        alignItems:'center',
+        justifyContent:'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     iconText: {
@@ -432,8 +474,7 @@ const styles = StyleSheet.create({
         marginRight: 5
     },
     dropdownContainer: {
-        marginVertical: 90,
-        backgroundColor: '#525252',
+        backgroundColor: '#2B2A29',
         borderRadius: 10,
         width: '80%',
         padding: 10,
