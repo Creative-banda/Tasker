@@ -8,7 +8,7 @@ import { database } from './firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const PeopleModal = ({ isVisible, toggleModal, searchQuery = '', handleSearch, filteredData, loaddata }) => {
+const PeopleModal = ({ isVisible, toggleModal, searchQuery, handleSearch, filteredData, loaddata }) => {
     const [selectedPerson, setSelectedPerson] = useState(null);
     const [task, setTask] = useState('');
     const [days, setDays] = useState(0);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, TextInput, SafeAreaView, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CommonActions } from '@react-navigation/native';
 import { ref, get, update } from 'firebase/database';
 import { database } from '../components/firebase';
 import CustomModal from '../components/CustomModal';
@@ -232,6 +231,7 @@ const RoleSelection = ({ navigation }) => {
     if (otp === Confirm_otp) {
       try {
         if (!ExpoToken) {
+          Alert.alert("No Permission","Please Allow The Notification")
           console.error("Token is null. Ensure the token is stored in AsyncStorage.");
           return;
         }
@@ -450,4 +450,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RoleSelection;
+export default RoleSelection; 

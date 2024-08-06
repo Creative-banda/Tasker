@@ -7,7 +7,7 @@ node_modules/
 .expo/
 dist/
 web-build/
-./components/firebase.js
+components/firebase.js
 
 # Native
 *.orig.*

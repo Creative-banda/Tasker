@@ -33,6 +33,8 @@ const HomeScreen = ({ navigation }) => {
     const [alertMessage, setAlertMessage] = useState('');
     const [CustomalertVisible, setCustomAlertVisible] = useState(false);
     const [taskUpdateTrigger, setTaskUpdateTrigger] = useState(0);
+    const [UserData, SetUsersData] = useState([]);
+    const [DeleteData, SetDeleteData] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -99,10 +101,12 @@ const HomeScreen = ({ navigation }) => {
                 if (username === "Admin") {
                     setFilteredData(filteredRolesData);
                     setFilterData(filteredRolesData);
+                    SetUsersData(filteredRolesData)
                 } else {
-                    const filteredByTeam = filteredRolesData.filter(item => item.Team === userTeam);
+                    const filteredByTeam = filteredRolesData.filter(item => item.Team === userTeam || item.Team === "STEM");
                     setFilteredData(filteredByTeam);
                     setFilterData(filteredByTeam);
+                    SetUsersData(filteredByTeam)
                 }
             } else {
                 setFilteredData([]);
@@ -150,7 +154,6 @@ const HomeScreen = ({ navigation }) => {
         }
         setModalVisible(!isModalVisible);
         if (isModalVisible) {
-            setSearchQuery('');
             initializeData();
 
         }
@@ -162,12 +165,9 @@ const HomeScreen = ({ navigation }) => {
 
     const handleSearch = (query) => {
         setSearchQuery(query);
-        if (query === '') {
-            initializeData();
-        } else {
-            const filtered = filteredData.filter(item => item.name.toLowerCase().includes(query.toLowerCase()));
-            setFilteredData(filtered);
-        }
+        const filtered = UserData.filter(item => item.name.toLowerCase().includes(query.toLowerCase()));
+        setFilteredData(filtered);
+
     };
 
     const sendNotification = async (token, message) => {
@@ -176,7 +176,7 @@ const HomeScreen = ({ navigation }) => {
                 token,
                 message,
             });
-    
+
             if (response.data.success) {
                 console.log('Notification sent successfully:', response.data.ticketChunk);
             } else {
@@ -252,11 +252,15 @@ const HomeScreen = ({ navigation }) => {
     };
 
     const dltstorage = async () => {
-        try {
-            await AsyncStorage.clear();
-            navigation.navigate('RoleSelection');
-        } catch (error) {
-            console.error('Error clearing AsyncStorage:', error);
+        SetDeleteData(DeleteData + 1)
+        if (DeleteData >= 5) {
+            try {
+                await AsyncStorage.clear();
+                navigation.navigate('RoleSelection');
+                SetDeleteData(0)
+            } catch (error) {
+                console.error('Error clearing AsyncStorage:', error);
+            }
         }
     };
 
@@ -294,7 +298,7 @@ const HomeScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor:"#1a1a1a"}}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: "#1a1a1a" }}>
 
             <LinearGradient colors={['#1a1a1a', '#333333']} style={styles.container}>
                 <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -457,9 +461,10 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     dropdownOverlay: {
-        paddingVertical:70,
-        alignItems:'center',
-        justifyContent:'center',
+        flex: 1,
+        paddingVertical: 70,
+        alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     iconText: {
