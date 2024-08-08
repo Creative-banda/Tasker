@@ -89,7 +89,10 @@ const HomeScreen = ({ navigation }) => {
     const initializeData = async () => {
         try {
             const userTeam = await AsyncStorage.getItem('userTeam');
-            const username = await AsyncStorage.getItem('userRole')
+            const username = await AsyncStorage.getItem('userRole');
+            const name = await AsyncStorage.getItem('userName');
+            console.log("Name :",name);
+            console.log("Role :",username);
             const rolesRef = ref(database, 'Admin');
             const snapshot = await get(rolesRef);
 
@@ -99,11 +102,12 @@ const HomeScreen = ({ navigation }) => {
                 const filteredRolesData = rolesArray.filter(item => item !== undefined);
 
                 if (username === "Admin") {
-                    setFilteredData(filteredRolesData);
-                    setFilterData(filteredRolesData);
-                    SetUsersData(filteredRolesData)
+                    const filtered = filteredRolesData.filter(item => item.name !== name);
+                    setFilteredData(filtered);
+                    setFilterData(filtered);
+                    SetUsersData(filtered)
                 } else {
-                    const filteredByTeam = filteredRolesData.filter(item => item.Team === userTeam || item.Team === "STEM");
+                    const filteredByTeam = filteredRolesData.filter(item => item.Team === userTeam && item.name !== name || item.Team === "STEM" );
                     setFilteredData(filteredByTeam);
                     setFilterData(filteredByTeam);
                     SetUsersData(filteredByTeam)
@@ -153,10 +157,7 @@ const HomeScreen = ({ navigation }) => {
             return;
         }
         setModalVisible(!isModalVisible);
-        if (isModalVisible) {
-            initializeData();
 
-        }
     };
 
     const toggleModalDropDown = () => {
@@ -200,7 +201,7 @@ const HomeScreen = ({ navigation }) => {
         if (taskToMarkDone && taskToMarkDone.id) {
             const username = await AsyncStorage.getItem('userName');
             if (taskToMarkDone.assignedBy !== username) {
-                sendNotification(taskToMarkDone.token, "Task marked as done by " + username + " for " + taskToMarkDone.title);
+                sendNotification(taskToMarkDone.token, "Task : " +taskToMarkDone.title + "Is Completed, Marked Done By " + username);
             }
             try {
                 const tasksRef = ref(database, `tasks/${taskToMarkDone.id}`);

@@ -5,7 +5,6 @@ import { ref, get, update } from 'firebase/database';
 import { database } from '../components/firebase';
 import CustomModal from '../components/CustomModal';
 import CrossIcon from '../assets/SVG/cross';
-import CustomAlert from '../components/CustomAlert';
 import DownArrow from '../assets/SVG/DownArrow';
 
 const RoleSelection = ({ navigation }) => {
@@ -171,16 +170,17 @@ const RoleSelection = ({ navigation }) => {
     const selectedPerson = NameWithEmail.find(n => n.name === selectedName);
     if (selectedPerson) {
       SetSelectedUser(selectedPerson);
-      ConfirmSend(selectedPerson.email);
+      console.log(selectedPerson);
+      ConfirmSend(selectedPerson.email, selectedPerson.name);
     }
   };
 
-  const ConfirmSend = (mail) => {
+  const ConfirmSend = (mail, username) => {
     const confirm_OTP = Math.floor(1000 + Math.random() * 9000).toString();
     console.log("Generated OTP:", confirm_OTP);
     SetConfirmOtp(confirm_OTP);
     console.log("Selected User : ", mail);
-    sendEmail(mail, confirm_OTP);
+    sendEmail(mail, confirm_OTP, username);
   };
 
   const handleFilterSearch = (query) => {
@@ -202,11 +202,11 @@ const RoleSelection = ({ navigation }) => {
     }
   };
 
-  const sendEmail = async (mail, message) => {
+  const sendEmail = async (mail, message, username) => {
     setSending(true);
     try {
-      // const apiUrl = 'https://script.google.com/macros/s/AKfycbxo7e0b-gpw4mIXeLiOQmwHW6Ao4u3jEm7bIaBvhLQLtlvZpTBhgq0D1-OR_cD_xr6R5g/exec';
-      // const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&message=${encodeURIComponent(message)}&title=${encodeURIComponent("Tasker Login OTP")}`);
+      // const apiUrl = 'https://script.google.com/macros/s/AKfycby7dCPaRC31OYs6g62DGMJducst70pySLJd6CrONeGb5vS8e2P9fws29dv4wMK5lYoRwQ/exec';
+      // const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&otpCode=${encodeURIComponent(message)}&username=${encodeURIComponent(username)}`);
       // const text = await res.text();
       // console.log(text);
 
