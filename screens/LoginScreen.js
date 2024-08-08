@@ -205,10 +205,10 @@ const RoleSelection = ({ navigation }) => {
   const sendEmail = async (mail, message, username) => {
     setSending(true);
     try {
-      // const apiUrl = 'https://script.google.com/macros/s/AKfycby7dCPaRC31OYs6g62DGMJducst70pySLJd6CrONeGb5vS8e2P9fws29dv4wMK5lYoRwQ/exec';
-      // const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&otpCode=${encodeURIComponent(message)}&username=${encodeURIComponent(username)}`);
-      // const text = await res.text();
-      // console.log(text);
+      const apiUrl = 'https://script.google.com/macros/s/AKfycby7dCPaRC31OYs6g62DGMJducst70pySLJd6CrONeGb5vS8e2P9fws29dv4wMK5lYoRwQ/exec';
+      const res = await fetch(`${apiUrl}?recipient=${encodeURIComponent(mail)}&otpCode=${encodeURIComponent(message)}&username=${encodeURIComponent(username)}`);
+      const text = await res.text();
+      console.log(text);
 
       Alert.alert(
         "Email Sent",
