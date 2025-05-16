@@ -14,6 +14,7 @@ import { ref, get, remove, set, onValue } from 'firebase/database';
 import { database } from '../components/firebase';
 import Alert from '../components/Alert';
 import axios from 'axios';
+import { SEND_NOTIFICATION } from '@env';
 
 const HomeScreen = ({ navigation }) => {
     const [isModalVisible, setModalVisible] = useState(false);
@@ -173,7 +174,7 @@ const HomeScreen = ({ navigation }) => {
 
     const sendNotification = async (token, message) => {
         try {
-            const response = await axios.post('https://taskerserver.onrender.com/send-notification', {
+            const response = await axios.post(SEND_NOTIFICATION, {
                 token,
                 message,
             });
